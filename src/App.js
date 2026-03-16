@@ -2,6 +2,7 @@ import express from "express";
 import {getConfigVariable} from "./util.js";
 import FireflyService from "./FireflyService.js";
 import OpenAiService from "./OpenAiService.js";
+import MistralService from "./MistralService.js";
 import {Server} from "socket.io";
 import * as http from "http";
 import Queue from "queue";
@@ -13,6 +14,7 @@ export default class App {
 
     #firefly;
     #openAi;
+    #mistral;
 
     #server;
     #io;
@@ -30,6 +32,7 @@ export default class App {
     async run() {
         this.#firefly = new FireflyService();
         this.#openAi = new OpenAiService();
+        this.#mistral = new MistralService();
 
         this.#queue = new Queue({
             timeout: 30 * 1000,
@@ -133,7 +136,7 @@ export default class App {
             allLists.set('categories', Array.from(categories.keys()));
             allLists.set('budgets', Array.from(budgets.keys()));
 
-            const {prompt, category, budget, response} = await this.#openAi.classify(allLists, destinationName, description)
+            const {prompt, category, budget, response} = await this.#mistral.classify(allLists, destinationName, description)
 
             const newData = Object.assign({}, job.data);
             newData.category = category;
