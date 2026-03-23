@@ -13,7 +13,9 @@ export default class MistralService {
     async classify(allLists, destinationName, description) {
         try {
             const prompt = `Categorize this transaction from my bank account with the following 
-        description ${description} and the following destination ${destinationName}`;
+        description ${description} and the following destination ${destinationName}.
+        Return the result by calling the classification function.
+        If you cannot confidently classify it, still call the function and use "none" for unknown values.`;
 
             const categories = allLists.get('categories');
             const budgets = allLists.get('budgets');
@@ -49,29 +51,35 @@ export default class MistralService {
                         }
                     }
                 ],
-                tool_choice: "any",
+                tool_choice: {
+                    type: "function",
+                    function: {name: "classification"}
+                },
                 parallel_tool_calls: false,
+                temperature: 0,
             };
 
             const response = await this.#chat(request);
             const functionCall = response.choices?.[0]?.message?.tool_calls?.[0];
+            const rawArguments = functionCall?.function?.arguments ?? this.#extractJsonFromContent(response.choices?.[0]?.message?.content);
 
-            if (!functionCall?.function?.arguments) {
-                throw new MistralException(null, null, "Mistral did not return a tool call for classification.");
+            if (!rawArguments) {
+                console.warn("Mistral response did not contain a tool call or parseable JSON content.", response.choices?.[0]?.message);
+                return null;
             }
 
-            const json = JSON.parse(functionCall.function.arguments);
+            const json = JSON.parse(rawArguments);
 
             if (categories.indexOf(json.category) === -1 && budgets.indexOf(json.budget) === -1) {
                 console.warn(`Mistral could not classify the transaction. 
                 Prompt: ${prompt}
-                Mistral's guess: ${functionCall.function.arguments}`)
+                Mistral's guess: ${rawArguments}`)
                 return null;
             }
 
             return {
                 prompt,
-                response: functionCall.function.arguments,
+                response: rawArguments,
                 category: json.category,
                 budget: json.budget
             }
@@ -112,6 +120,28 @@ export default class MistralService {
     #extractStatusCode(error) {
         const match = error?.message?.match(/status:\s*(\d{3})/i);
         return match ? Number(match[1]) : null;
+    }
+
+    #extractJsonFromContent(content) {
+        if (!content) {
+            return null;
+        }
+
+        const text = Array.isArray(content)
+            ? content.map(part => typeof part === "string" ? part : part?.text ?? "").join("\n")
+            : content;
+
+        if (typeof text !== "string") {
+            return null;
+        }
+
+        const trimmed = text.trim();
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            return trimmed;
+        }
+
+        const match = trimmed.match(/\{[\s\S]*\}/);
+        return match ? match[0] : null;
     }
 }
 

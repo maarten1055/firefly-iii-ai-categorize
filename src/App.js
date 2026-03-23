@@ -57,6 +57,10 @@ export default class App {
 
         if (this.#ENABLE_UI) {
             this.#express.use('/', express.static('public'))
+        } else {
+            this.#express.get('/', (req, res) => {
+                res.status(200).type('text/plain').send('Web UI is disabled. Set ENABLE_UI=true and restart the application to serve the UI at /.');
+            });
         }
 
         this.#express.get('/api/diagnostics', this.#onDiagnostics.bind(this))
