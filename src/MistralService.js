@@ -60,11 +60,12 @@ export default class MistralService {
             };
 
             const response = await this.#chat(request);
-            const functionCall = response.choices?.[0]?.message?.tool_calls?.[0];
-            const rawArguments = functionCall?.function?.arguments ?? this.#extractJsonFromContent(response.choices?.[0]?.message?.content);
+            const message = response.choices?.[0]?.message;
+            const functionCall = message?.toolCalls?.[0] ?? message?.tool_calls?.[0];
+            const rawArguments = functionCall?.function?.arguments ?? this.#extractJsonFromContent(message?.content);
 
             if (!rawArguments) {
-                console.warn("Mistral response did not contain a tool call or parseable JSON content.", response.choices?.[0]?.message);
+                console.warn("Mistral response did not contain a tool call or parseable JSON content.", message);
                 return null;
             }
 

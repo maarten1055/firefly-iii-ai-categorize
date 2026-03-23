@@ -191,19 +191,19 @@ export default class App {
             allLists.set('categories', Array.from(categories.keys()));
             allLists.set('budgets', Array.from(budgets.keys()));
 
-            const {prompt, category, budget, response} = await mistral.classify(allLists, destinationName, description)
+            const classification = await mistral.classify(allLists, destinationName, description);
 
             const newData = Object.assign({}, job.data);
-            newData.category = category;
-            newData.budget = budget;
-            newData.prompt = prompt;
-            newData.response = response;
+            newData.category = classification?.category ?? null;
+            newData.budget = classification?.budget ?? null;
+            newData.prompt = classification?.prompt ?? null;
+            newData.response = classification?.response ?? null;
 
             this.#jobList.updateJobData(job.id, newData);
 
-            if (category || budget) {
-                const category_id = categories.has(category) ? categories.get(category) : -1;
-                const budget_id = budgets.has(budget) ? budgets.get(budget) : -1;
+            if (classification?.category || classification?.budget) {
+                const category_id = categories.has(classification.category) ? categories.get(classification.category) : -1;
+                const budget_id = budgets.has(classification.budget) ? budgets.get(classification.budget) : -1;
                 await firefly.setCategoryAndBudget(req.body.content.id, req.body.content.transactions, category_id, budget_id);
             }
 
