@@ -13,7 +13,7 @@ export default class App {
     #ENABLE_UI;
 
     #firefly;
-    #openAi;
+    //#openAi;
     #mistral;
 
     #server;
@@ -31,7 +31,7 @@ export default class App {
 
     async run() {
         this.#firefly = new FireflyService();
-        this.#openAi = new OpenAiService();
+        //this.#openAi = new OpenAiService();
         this.#mistral = new MistralService();
 
         this.#queue = new Queue({
