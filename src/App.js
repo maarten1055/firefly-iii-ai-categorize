@@ -7,6 +7,7 @@ import {Server} from "socket.io";
 import * as http from "http";
 import Queue from "queue";
 import JobList from "./JobList.js";
+import {MissingEnvironmentVariableException} from "./util.js";
 
 export default class App {
     static #VALID_TRANSACTION_TRIGGERS = ["STORE_TRANSACTION", "TRIGGER_STORE_TRANSACTION", "UPDATE_TRANSACTION", "TRIGGER_UPDATE_TRANSACTION"];
@@ -33,10 +34,6 @@ export default class App {
     }
 
     async run() {
-        this.#firefly = new FireflyService();
-        //this.#openAi = new OpenAiService();
-        this.#mistral = new MistralService();
-
         this.#queue = new Queue({
             timeout: 30 * 1000,
             concurrency: 1,
@@ -62,6 +59,7 @@ export default class App {
             this.#express.use('/', express.static('public'))
         }
 
+        this.#express.get('/api/diagnostics', this.#onDiagnostics.bind(this))
         this.#express.post('/webhook', this.#onWebhook.bind(this))
 
         this.#server.listen(this.#PORT, async () => {
@@ -72,6 +70,54 @@ export default class App {
             console.log('connected');
             socket.emit('jobs', Array.from(this.#jobList.getJobs().values()));
         })
+    }
+
+    #getFireflyService() {
+        if (!this.#firefly) {
+            this.#firefly = new FireflyService();
+        }
+
+        return this.#firefly;
+    }
+
+    #getMistralService() {
+        if (!this.#mistral) {
+            this.#mistral = new MistralService();
+        }
+
+        return this.#mistral;
+    }
+
+    async #onDiagnostics(req, res) {
+        const diagnostics = await Promise.all([
+            this.#runCheck('firefly', async () => await this.#getFireflyService().diagnose()),
+            this.#runCheck('mistral', async () => await this.#getMistralService().diagnose())
+        ]);
+
+        const ok = diagnostics.every(check => check.ok);
+        res.status(ok ? 200 : 503).json({
+            ok,
+            checks: diagnostics
+        });
+    }
+
+    async #runCheck(name, fn) {
+        try {
+            const details = await fn();
+            return {
+                name,
+                ok: true,
+                details
+            };
+        } catch (error) {
+            return {
+                name,
+                ok: false,
+                error: error instanceof MissingEnvironmentVariableException
+                    ? `Missing environment variable: ${error.variableName}`
+                    : error.message
+            };
+        }
     }
 
     #onWebhook(req, res) {
@@ -131,15 +177,17 @@ export default class App {
         this.#queue.push(async () => {
             this.#jobList.setJobInProgress(job.id);
 
-            const categories = await this.#firefly.getCategories();
-            const budgets = await this.#firefly.getBudgets();
+            const firefly = this.#getFireflyService();
+            const mistral = this.#getMistralService();
+            const categories = await firefly.getCategories();
+            const budgets = await firefly.getBudgets();
 
             const allLists = new Map();
 
             allLists.set('categories', Array.from(categories.keys()));
             allLists.set('budgets', Array.from(budgets.keys()));
 
-            const {prompt, category, budget, response} = await this.#mistral.classify(allLists, destinationName, description)
+            const {prompt, category, budget, response} = await mistral.classify(allLists, destinationName, description)
 
             const newData = Object.assign({}, job.data);
             newData.category = category;
@@ -152,7 +200,7 @@ export default class App {
             if (category || budget) {
                 const category_id = categories.has(category) ? categories.get(category) : -1;
                 const budget_id = budgets.has(budget) ? budgets.get(budget) : -1;
-                await this.#firefly.setCategoryAndBudget(req.body.content.id, req.body.content.transactions, category_id, budget_id);
+                await firefly.setCategoryAndBudget(req.body.content.id, req.body.content.transactions, category_id, budget_id);
             }
 
             this.#jobList.setJobFinished(job.id);

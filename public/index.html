@@ -25,6 +25,58 @@
             text-align: center;
         }
 
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .button {
+            border: 0;
+            border-radius: 5px;
+            padding: 10px 14px;
+            cursor: pointer;
+            background: #1f2937;
+            color: #fff;
+        }
+
+        .diagnostics {
+            border: solid 1px #d1d5db;
+            border-radius: 5px;
+            padding: 16px;
+            margin-bottom: 24px;
+            background: #f9fafb;
+        }
+
+        .checks {
+            display: grid;
+            gap: 12px;
+        }
+
+        .check {
+            border-radius: 5px;
+            padding: 12px;
+            background: #fff;
+            border: solid 1px #e5e7eb;
+        }
+
+        .check.ok {
+            border-color: #86efac;
+            background: #f0fdf4;
+        }
+
+        .check.error {
+            border-color: #fca5a5;
+            background: #fef2f2;
+        }
+
+        .muted {
+            color: #6b7280;
+        }
+
         .job {
             border: solid 1px;
             border-radius: 5px;
@@ -43,6 +95,16 @@
 <body>
     <div class="container">
         <h1>Firefly III AI Categorizer</h1>
+        <section class="diagnostics">
+            <div class="toolbar">
+                <div>
+                    <h2>System Check</h2>
+                    <div id="diagnostics-summary" class="muted">Run a live check against Firefly III and Mistral.</div>
+                </div>
+                <button id="run-diagnostics" class="button" type="button">Run checks</button>
+            </div>
+            <div id="diagnostics-checks" class="checks"></div>
+        </section>
         <section>
             <h2>Jobs</h2>
             <div id="mount"></div>
@@ -74,6 +136,32 @@
         let socket = io();
 
         const mount = document.getElementById('mount');
+        const diagnosticsSummary = document.getElementById('diagnostics-summary');
+        const diagnosticsChecks = document.getElementById('diagnostics-checks');
+        const diagnosticsButton = document.getElementById('run-diagnostics');
+
+        diagnosticsButton.addEventListener('click', async () => {
+            diagnosticsButton.disabled = true;
+            diagnosticsButton.textContent = 'Checking...';
+            diagnosticsSummary.textContent = 'Running live checks...';
+
+            try {
+                const response = await fetch('/api/diagnostics');
+                const diagnostics = await response.json();
+
+                diagnosticsSummary.textContent = diagnostics.ok
+                    ? 'All configured integrations responded successfully.'
+                    : 'One or more checks failed.';
+
+                diagnosticsChecks.innerHTML = diagnostics.checks.map(renderCheck).join('');
+            } catch (error) {
+                diagnosticsSummary.textContent = `Diagnostics failed to load: ${error.message}`;
+                diagnosticsChecks.innerHTML = '';
+            } finally {
+                diagnosticsButton.disabled = false;
+                diagnosticsButton.textContent = 'Run checks';
+            }
+        });
 
         socket.on('jobs', jobs => {
             console.log('jobs', jobs);
@@ -135,6 +223,19 @@
                  </details>
             </div>` : ''}
         </article>`
+        }
+
+        const renderCheck = (check) => {
+            const details = check.ok
+                ? Object.entries(check.details)
+                    .map(([key, value]) => `<div><strong>${key}:</strong> <span>${value}</span></div>`)
+                    .join('')
+                : `<div><strong>Error:</strong> <span>${check.error}</span></div>`;
+
+            return `<article class="check ${check.ok ? 'ok' : 'error'}">
+                <div><strong>${check.name}</strong> <span>${check.ok ? 'OK' : 'Failed'}</span></div>
+                ${details}
+            </article>`;
         }
     </script>
 </body>

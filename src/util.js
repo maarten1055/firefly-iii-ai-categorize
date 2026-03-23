@@ -1,4 +1,4 @@
-class MissingEnvironmentVariableException extends Error {
+export class MissingEnvironmentVariableException extends Error {
     variableName;
 
     constructor(variableName) {

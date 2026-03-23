@@ -93,6 +93,18 @@ export default class MistralService {
         }
     }
 
+    async diagnose() {
+        const models = await this.#mistral.models.list();
+        const availableModels = Array.isArray(models.data) ? models.data.map(model => model.id) : [];
+
+        return {
+            ok: true,
+            model: this.#model,
+            modelAvailable: availableModels.includes(this.#model),
+            availableModelCount: availableModels.length
+        };
+    }
+
     async #chat(request) {
         return await this.#mistral.chat.complete(request);
     }

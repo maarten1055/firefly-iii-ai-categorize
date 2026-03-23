@@ -86,6 +86,18 @@ export default class FireflyService {
         console.info("Transaction updated")
     }
 
+    async diagnose() {
+        const categories = await this.getCategories();
+        const budgets = await this.getBudgets();
+
+        return {
+            ok: true,
+            baseUrl: this.#BASE_URL,
+            categories: categories.size,
+            budgets: budgets.size
+        };
+    }
+
     async *#fetchCollection(path) {
         let page = 1;
 
