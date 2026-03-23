@@ -34,15 +34,7 @@ export default class FireflyService {
     }
 
     async getBills()    {
-        const response = await fetch(`${this.#BASE_URL}/api/v1/bills`, {
-            headers: {
-                Authorization: `Bearer ${this.#PERSONAL_TOKEN}`,
-            }
-        });
-
-        if (!response.ok) {
-            throw new FireflyException(response.status, response, await response.text())
-        }
+        const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/bills`);
 
         const data = await response.json();
 
@@ -82,18 +74,13 @@ export default class FireflyService {
             body.transactions.push(object);
         })
 
-        const response = await fetch(`${this.#BASE_URL}/api/v1/transactions/${transactionId}`, {
+        const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/transactions/${transactionId}`, {
             method: "PUT",
             headers: {
-                Authorization: `Bearer ${this.#PERSONAL_TOKEN}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(body)
         });
-
-        if (!response.ok) {
-            throw new FireflyException(response.status, response, await response.text())
-        }
 
         await response.json();
         console.info("Transaction updated")
@@ -103,15 +90,7 @@ export default class FireflyService {
         let page = 1;
 
         while (true) {
-            const response = await fetch(`${this.#BASE_URL}${path}?page=${page}`, {
-                headers: {
-                    Authorization: `Bearer ${this.#PERSONAL_TOKEN}`,
-                }
-            });
-
-            if (!response.ok) {
-                throw new FireflyException(response.status, response, await response.text())
-            }
+            const response = await this.#authorizedFetch(`${this.#BASE_URL}${path}?page=${page}`);
 
             const data = await response.json();
             const items = data.data ?? [];
@@ -127,6 +106,22 @@ export default class FireflyService {
             page += 1;
         }
     }
+
+    async #authorizedFetch(url, options = {}) {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                Authorization: `Bearer ${this.#PERSONAL_TOKEN}`,
+                ...(options.headers ?? {}),
+            }
+        });
+
+        if (!response.ok) {
+            throw new FireflyException(response.status, response, await response.text(), url)
+        }
+
+        return response;
+    }
 }
 
 class FireflyException extends Error {
@@ -134,8 +129,8 @@ class FireflyException extends Error {
     response;
     body;
 
-    constructor(statusCode, response, body) {
-        super(`Error while communicating with Firefly III: ${statusCode} - ${body}`);
+    constructor(statusCode, response, body, url = null) {
+        super(`Error while communicating with Firefly III${url ? ` at ${url}` : ""}: ${statusCode} - ${body}`);
 
         this.code = statusCode;
         this.response = response;
