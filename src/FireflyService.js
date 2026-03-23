@@ -14,43 +14,21 @@ export default class FireflyService {
     }
 
     async getCategories() {
-        const response = await fetch(`${this.#BASE_URL}/api/v1/categories`, {
-            headers: {
-                Authorization: `Bearer ${this.#PERSONAL_TOKEN}`,
-            }
-        });
-
-        if (!response.ok) {
-            throw new FireflyException(response.status, response, await response.text())
-        }
-
-        const data = await response.json();
-
         const categories = new Map();
-        data.data.forEach(category => {
+
+        for await (const category of this.#fetchCollection("/api/v1/categories")) {
             categories.set(category.attributes.name, category.id);
-        });
+        }
 
         return categories;
     }
 
     async getBudgets() {
-        const response = await fetch(`${this.#BASE_URL}/api/v1/budgets`, {
-            headers: {
-                Authorization: `Bearer ${this.#PERSONAL_TOKEN}`,
-            }
-        });
-
-        if (!response.ok) {
-            throw new FireflyException(response.status, response, await response.text())
-        }
-
-        const data = await response.json();
-
         const budgets = new Map();
-        data.data.forEach(budget => {
+
+        for await (const budget of this.#fetchCollection("/api/v1/budgets")) {
             budgets.set(budget.attributes.name, budget.id);
-        });
+        }
 
         return budgets;
     }
@@ -86,11 +64,7 @@ export default class FireflyService {
         }
 
         transactions.forEach(transaction => {
-            let tags = transaction.tags;
-            if (!tags) {
-                tags = [];
-            }
-            tags.push(tag);
+            const tags = Array.from(new Set([...(transaction.tags ?? []), tag]));
 
             const object = {
                 transaction_journal_id: transaction.transaction_journal_id,
@@ -123,6 +97,35 @@ export default class FireflyService {
 
         await response.json();
         console.info("Transaction updated")
+    }
+
+    async *#fetchCollection(path) {
+        let page = 1;
+
+        while (true) {
+            const response = await fetch(`${this.#BASE_URL}${path}?page=${page}`, {
+                headers: {
+                    Authorization: `Bearer ${this.#PERSONAL_TOKEN}`,
+                }
+            });
+
+            if (!response.ok) {
+                throw new FireflyException(response.status, response, await response.text())
+            }
+
+            const data = await response.json();
+            const items = data.data ?? [];
+
+            for (const item of items) {
+                yield item;
+            }
+
+            if (items.length === 0 || !data.meta?.pagination || page >= data.meta.pagination.total_pages) {
+                break;
+            }
+
+            page += 1;
+        }
     }
 }
 
