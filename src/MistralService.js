@@ -1,4 +1,4 @@
-import {MistralClient} from "@mistralai/mistralai";
+import * as mistralSdk from "@mistralai/mistralai";
 import {getConfigVariable} from "./util.js";
 
 export default class MistralService {
@@ -8,7 +8,13 @@ export default class MistralService {
     constructor() {
         const apiKey = getConfigVariable("MISTRAL_API_KEY")
 
-        this.#mistral = new MistralClient(apiKey);
+        const MistralConstructor = mistralSdk.MistralClient ?? mistralSdk.Mistral ?? mistralSdk.default;
+
+        if (!MistralConstructor) {
+            throw new Error("Unsupported @mistralai/mistralai package version: no client constructor export found.");
+        }
+
+        this.#mistral = this.#createClient(MistralConstructor, apiKey);
     }
 
     async classify(allLists, destinationName, description) {
@@ -19,7 +25,7 @@ export default class MistralService {
             const categories = allLists.get('categories');
             const budgets = allLists.get('budgets');
 
-            const response = await this.#mistral.chat({
+            const request = {
                 model: this.#model,
                 messages: [{role: "user", content: prompt}],
                 tools: [
@@ -51,7 +57,9 @@ export default class MistralService {
                     }
                 ],
                 tool_choice: {"type": "function", "function": {"name": "classification"}},
-            });
+            };
+
+            const response = await this.#chat(request);
 
             const function_call = response.choices[0].message.tool_calls[0];
             const json = JSON.parse(function_call.function.arguments);
@@ -80,6 +88,26 @@ export default class MistralService {
                 throw new MistralException(null, null, error.message);
             }
         }
+    }
+
+    #createClient(MistralConstructor, apiKey) {
+        try {
+            return new MistralConstructor({apiKey});
+        } catch {
+            return new MistralConstructor(apiKey);
+        }
+    }
+
+    async #chat(request) {
+        if (typeof this.#mistral.chat === "function") {
+            return await this.#mistral.chat(request);
+        }
+
+        if (this.#mistral.chat && typeof this.#mistral.chat.complete === "function") {
+            return await this.#mistral.chat.complete(request);
+        }
+
+        throw new Error("Unsupported @mistralai/mistralai package version: no chat method found.");
     }
 }
 
