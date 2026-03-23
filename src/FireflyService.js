@@ -59,7 +59,7 @@ export default class FireflyService {
 
         const body = {
             apply_rules: true,
-            fire_webhooks: true,
+            fire_webhooks: false,
             transactions: [],
         }
 
