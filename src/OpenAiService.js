@@ -1,18 +1,14 @@
-import {Configuration, OpenAIApi} from "openai";
+import OpenAI from "openai";
 import {getConfigVariable} from "./util.js";
 
 export default class OpenAiService {
     #openAi;
-    #model = "gpt-3.5-turbo-instruct";
+    #model = "gpt-4o-mini";
 
     constructor() {
         const apiKey = getConfigVariable("OPENAI_API_KEY")
 
-        const configuration = new Configuration({
-            apiKey
-        });
-
-        this.#openAi = new OpenAIApi(configuration)
+        this.#openAi = new OpenAI({apiKey});
     }
 
     async classify(allLists, destinationName, description) {
@@ -23,60 +19,78 @@ export default class OpenAiService {
             const categories = allLists.get('categories');
             const budgets = allLists.get('budgets');
 
-            const response = await this.#openAi.createChatCompletion({
+            const response = await this.#openAi.chat.completions.create({
                 model: this.#model,
                 messages: [{role: "user", content: prompt}],
-                functions: [
+                tools: [
                     {
-                        "name": "classification",
-                        "description": "Classify a financial transaction into a category and budget, use only values from the lists provided.",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "category": {
-                                    "type": "string",
-                                    "description": `The category to classify the transaction into. 
+                        "type": "function",
+                        "function": {
+                            "name": "classification",
+                            "description": "Classify a financial transaction into a category and budget, use only values from the lists provided.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "category": {
+                                        "type": "string",
+                                        "description": `The category to classify the transaction into. 
                                     Use only these values: ${categories.join(", ")}.
                                     Use none if no category applies.`
-                                },
-                                "budget": {
-                                    "type": "string",
-                                    "description": `The budget to classify the transaction into.
+                                    },
+                                    "budget": {
+                                        "type": "string",
+                                        "description": `The budget to classify the transaction into.
                                     Use only these values: ${budgets.join(", ")}.
                                     Use none if no budget applies.
                                     `
-                                }
-                            },
-                            "required": ["category", "budget"]
+                                    }
+                                },
+                                "required": ["category", "budget"]
+                            }
                         }
                     }
-
                 ],
-                function_call: {name: "classification"},
+                tool_choice: {
+                    type: "function",
+                    function: {name: "classification"}
+                },
             });
 
-            const function_call = response.data.choices[0].message.function_call;
-            const json = JSON.parse(function_call.arguments);
+            const functionCall = response.choices[0]?.message?.tool_calls?.[0];
+
+            if (!functionCall?.function?.arguments) {
+                throw new OpenAiException(null, null, "OpenAI did not return a tool call for classification.");
+            }
+
+            const json = JSON.parse(functionCall.function.arguments);
 
             if (categories.indexOf(json.category) === -1 && budgets.indexOf(json.budget) === -1) {
                 console.warn(`OpenAI could not classify the transaction. 
                 Prompt: ${prompt}
-                OpenAIs guess: ${function_call.arguments}`)
+                OpenAI's guess: ${functionCall.function.arguments}`)
                 return null;
             }
 
             return {
                 prompt,
-                response: function_call.arguments,
+                response: functionCall.function.arguments,
                 category: json.category,
                 budget: json.budget
             }
 
         } catch (error) {
-            if (error.response) {
-                console.error(error.response.status);
-                console.error(error.response.data);
-                throw new OpenAiException(error.status, error.response, error.response.data);
+            if (error instanceof OpenAiException) {
+                throw error;
+            }
+
+            if (error.status || error.response) {
+                console.error(error.status ?? error.response?.status);
+                console.error(error.response?.data ?? error.message);
+                throw new OpenAiException(
+                    error.status ?? error.response?.status ?? null,
+                    error.response ?? null,
+                    error.response?.data ?? error.message
+                );
             } else {
                 console.error(error.message);
                 throw new OpenAiException(null, null, error.message);

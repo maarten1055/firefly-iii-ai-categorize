@@ -3,7 +3,7 @@ import {getConfigVariable} from "./util.js";
 
 export default class MistralService {
     #mistral;
-    #model = "mistral-tiny";
+    #model = "mistral-small-latest";
 
     constructor() {
         const apiKey = getConfigVariable("MISTRAL_API_KEY")
@@ -60,25 +60,33 @@ export default class MistralService {
             };
 
             const response = await this.#chat(request);
+            const functionCall = response.choices?.[0]?.message?.tool_calls?.[0];
 
-            const function_call = response.choices[0].message.tool_calls[0];
-            const json = JSON.parse(function_call.function.arguments);
+            if (!functionCall?.function?.arguments) {
+                throw new MistralException(null, null, "Mistral did not return a tool call for classification.");
+            }
+
+            const json = JSON.parse(functionCall.function.arguments);
 
             if (categories.indexOf(json.category) === -1 && budgets.indexOf(json.budget) === -1) {
                 console.warn(`Mistral could not classify the transaction. 
                 Prompt: ${prompt}
-                Mistral's guess: ${function_call.function.arguments}`)
+                Mistral's guess: ${functionCall.function.arguments}`)
                 return null;
             }
 
             return {
                 prompt,
-                response: function_call.function.arguments,
+                response: functionCall.function.arguments,
                 category: json.category,
                 budget: json.budget
             }
 
         } catch (error) {
+            if (error instanceof MistralException) {
+                throw error;
+            }
+
             if (error.response) {
                 console.error(error.response.status);
                 console.error(error.response.data);
