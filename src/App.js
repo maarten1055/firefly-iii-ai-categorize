@@ -9,6 +9,9 @@ import Queue from "queue";
 import JobList from "./JobList.js";
 
 export default class App {
+    static #VALID_TRANSACTION_TRIGGERS = ["STORE_TRANSACTION", "TRIGGER_STORE_TRANSACTION", "UPDATE_TRANSACTION", "TRIGGER_UPDATE_TRANSACTION"];
+    static #VALID_TRANSACTION_RESPONSES = ["TRANSACTIONS", "RESPONSE_TRANSACTIONS"];
+
     #PORT;
     #ENABLE_UI;
 
@@ -85,12 +88,12 @@ export default class App {
     #handleWebhook(req, res) {
         // TODO: validate auth
 
-        if (req.body?.trigger !== "STORE_TRANSACTION") {
-            throw new WebhookException("trigger is not STORE_TRANSACTION. Request will not be processed");
+        if (!App.#VALID_TRANSACTION_TRIGGERS.includes(req.body?.trigger)) {
+            throw new WebhookException(`Unsupported webhook trigger "${req.body?.trigger}". Expected one of: ${App.#VALID_TRANSACTION_TRIGGERS.join(", ")}.`);
         }
 
-        if (req.body?.response !== "TRANSACTIONS") {
-            throw new WebhookException("trigger is not TRANSACTION. Request will not be processed");
+        if (!App.#VALID_TRANSACTION_RESPONSES.includes(req.body?.response)) {
+            throw new WebhookException(`Unsupported webhook response "${req.body?.response}". Expected one of: ${App.#VALID_TRANSACTION_RESPONSES.join(", ")}.`);
         }
 
         if (!req.body?.content?.id) {
