@@ -1,4 +1,4 @@
-import * as mistralSdk from "@mistralai/mistralai";
+import {Mistral} from "@mistralai/mistralai";
 import {getConfigVariable} from "./util.js";
 
 export default class MistralService {
@@ -7,14 +7,7 @@ export default class MistralService {
 
     constructor() {
         const apiKey = getConfigVariable("MISTRAL_API_KEY")
-
-        const MistralConstructor = mistralSdk.MistralClient ?? mistralSdk.Mistral ?? mistralSdk.default;
-
-        if (!MistralConstructor) {
-            throw new Error("Unsupported @mistralai/mistralai package version: no client constructor export found.");
-        }
-
-        this.#mistral = this.#createClient(MistralConstructor, apiKey);
+        this.#mistral = new Mistral({apiKey});
     }
 
     async classify(allLists, destinationName, description) {
@@ -56,7 +49,8 @@ export default class MistralService {
                         }
                     }
                 ],
-                tool_choice: {"type": "function", "function": {"name": "classification"}},
+                tool_choice: "any",
+                parallel_tool_calls: false,
             };
 
             const response = await this.#chat(request);
@@ -87,35 +81,25 @@ export default class MistralService {
                 throw error;
             }
 
-            if (error.response) {
-                console.error(error.response.status);
-                console.error(error.response.data);
-                throw new MistralException(error.status, error.response, error.response.data);
-            } else {
-                console.error(error.message);
-                throw new MistralException(null, null, error.message);
-            }
-        }
-    }
+            const statusCode = error.statusCode ?? error.status ?? this.#extractStatusCode(error);
+            const body = error.body ?? error.message;
 
-    #createClient(MistralConstructor, apiKey) {
-        try {
-            return new MistralConstructor({apiKey});
-        } catch {
-            return new MistralConstructor(apiKey);
+            console.error(error.message);
+            if (body && body !== error.message) {
+                console.error(body);
+            }
+
+            throw new MistralException(statusCode, error.rawResponse ?? error.response ?? null, body);
         }
     }
 
     async #chat(request) {
-        if (typeof this.#mistral.chat === "function") {
-            return await this.#mistral.chat(request);
-        }
+        return await this.#mistral.chat.complete(request);
+    }
 
-        if (this.#mistral.chat && typeof this.#mistral.chat.complete === "function") {
-            return await this.#mistral.chat.complete(request);
-        }
-
-        throw new Error("Unsupported @mistralai/mistralai package version: no chat method found.");
+    #extractStatusCode(error) {
+        const match = error?.message?.match(/status:\s*(\d{3})/i);
+        return match ? Number(match[1]) : null;
     }
 }
 

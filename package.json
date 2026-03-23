@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mistralai/mistralai": "^0.0.8",
+    "@mistralai/mistralai": "^2.1.2",
     "express": "^4.18.2",
     "openai": "^6.32.0",
     "queue": "^7.0.0",
