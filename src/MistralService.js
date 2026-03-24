@@ -10,10 +10,20 @@ export default class MistralService {
         this.#mistral = new Mistral({apiKey});
     }
 
-    async classify(allLists, destinationName, description) {
+    async classify(allLists, destinationName, description, recentTransactions = []) {
         try {
+            const historyBlock = recentTransactions.length > 0
+                ? `Recent categorized transactions for the same destination:
+${recentTransactions.map((transaction, index) => `${index + 1}. date=${transaction.date}; amount=${transaction.amount} ${transaction.currencyCode ?? ""}; description=${transaction.description}; category=${transaction.category ?? "none"}; budget=${transaction.budget ?? "none"}`).join("\n")}
+
+Use these as hints for consistency, but prefer the current transaction details if they clearly differ.
+
+`
+                : "";
+
             const prompt = `Categorize this transaction from my bank account with the following 
         description ${description} and the following destination ${destinationName}.
+        ${historyBlock}
         Return the result by calling the classification function.
         If you cannot confidently classify it, still call the function and use "none" for unknown values.`;
 

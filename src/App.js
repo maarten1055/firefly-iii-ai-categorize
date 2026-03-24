@@ -12,6 +12,7 @@ import {MissingEnvironmentVariableException} from "./util.js";
 export default class App {
     static #VALID_TRANSACTION_TRIGGERS = ["STORE_TRANSACTION", "TRIGGER_STORE_TRANSACTION", "UPDATE_TRANSACTION", "TRIGGER_UPDATE_TRANSACTION"];
     static #VALID_TRANSACTION_RESPONSES = ["TRANSACTIONS", "RESPONSE_TRANSACTIONS"];
+    static #DESTINATION_HISTORY_LIMIT = 5;
 
     #PORT;
     #ENABLE_UI;
@@ -185,19 +186,31 @@ export default class App {
             const mistral = this.#getMistralService();
             const categories = await firefly.getCategories();
             const budgets = await firefly.getBudgets();
+            let recentTransactions = [];
+
+            try {
+                recentTransactions = await firefly.getRecentTransactionsForDestination(
+                    destinationName,
+                    App.#DESTINATION_HISTORY_LIMIT,
+                    req.body.content.transactions[0].transaction_journal_id ?? null
+                );
+            } catch (error) {
+                console.warn(`Could not load recent transactions for destination "${destinationName}": ${error.message}`);
+            }
 
             const allLists = new Map();
 
             allLists.set('categories', Array.from(categories.keys()));
             allLists.set('budgets', Array.from(budgets.keys()));
 
-            const classification = await mistral.classify(allLists, destinationName, description);
+            const classification = await mistral.classify(allLists, destinationName, description, recentTransactions);
 
             const newData = Object.assign({}, job.data);
             newData.category = classification?.category ?? null;
             newData.budget = classification?.budget ?? null;
             newData.prompt = classification?.prompt ?? null;
             newData.response = classification?.response ?? null;
+            newData.historyCount = recentTransactions.length;
 
             this.#jobList.updateJobData(job.id, newData);
 

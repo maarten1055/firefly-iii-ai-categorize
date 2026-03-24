@@ -46,6 +46,39 @@ export default class FireflyService {
         return bills;
     }
 
+    async getRecentTransactionsForDestination(destinationName, limit = 5, excludeJournalId = null) {
+        const params = new URLSearchParams({
+            query: `to:"${this.#escapeSearchValue(destinationName)}"`,
+            page: "1",
+            limit: String(Math.max(limit * 4, 20))
+        });
+
+        const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/search/transactions?${params.toString()}`);
+        const data = await response.json();
+        const transactionGroups = data.data ?? [];
+
+        const matches = transactionGroups.flatMap(group =>
+            (group.attributes?.transactions ?? []).map(transaction => ({
+                id: transaction.transaction_journal_id,
+                date: transaction.date,
+                description: transaction.description,
+                destinationName: transaction.destination_name,
+                amount: transaction.amount,
+                currencyCode: transaction.currency_code,
+                category: transaction.category_name,
+                budget: transaction.budget_name,
+                type: transaction.type
+            }))
+        ).filter(transaction =>
+            transaction.type === "withdrawal" &&
+            transaction.destinationName === destinationName &&
+            transaction.id !== excludeJournalId &&
+            (transaction.category || transaction.budget)
+        ).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        return matches.slice(0, limit);
+    }
+
     async setCategoryAndBudget(transactionId, transactions, categoryId, budgetId) {
         const tag = getConfigVariable("FIREFLY_TAG", "AI categorized");
 
@@ -133,6 +166,10 @@ export default class FireflyService {
         }
 
         return response;
+    }
+
+    #escapeSearchValue(value) {
+        return String(value).replace(/(["\\])/g, "\\$1");
     }
 }
 
