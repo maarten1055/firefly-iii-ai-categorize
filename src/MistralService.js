@@ -80,8 +80,10 @@ Use these as hints for consistency, but prefer the current transaction details i
             }
 
             const json = JSON.parse(rawArguments);
+            const category = categories.includes(json.category) ? json.category : null;
+            const budget = budgets.includes(json.budget) ? json.budget : null;
 
-            if (categories.indexOf(json.category) === -1 && budgets.indexOf(json.budget) === -1) {
+            if (!category && !budget) {
                 console.warn(`Mistral could not classify the transaction. 
                 Prompt: ${prompt}
                 Mistral's guess: ${rawArguments}`)
@@ -91,8 +93,8 @@ Use these as hints for consistency, but prefer the current transaction details i
             return {
                 prompt,
                 response: rawArguments,
-                category: json.category,
-                budget: json.budget
+                category,
+                budget
             }
 
         } catch (error) {

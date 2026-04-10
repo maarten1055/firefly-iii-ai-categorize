@@ -63,8 +63,10 @@ export default class OpenAiService {
             }
 
             const json = JSON.parse(functionCall.function.arguments);
+            const category = categories.includes(json.category) ? json.category : null;
+            const budget = budgets.includes(json.budget) ? json.budget : null;
 
-            if (categories.indexOf(json.category) === -1 && budgets.indexOf(json.budget) === -1) {
+            if (!category && !budget) {
                 console.warn(`OpenAI could not classify the transaction. 
                 Prompt: ${prompt}
                 OpenAI's guess: ${functionCall.function.arguments}`)
@@ -74,8 +76,8 @@ export default class OpenAiService {
             return {
                 prompt,
                 response: functionCall.function.arguments,
-                category: json.category,
-                budget: json.budget
+                category,
+                budget
             }
 
         } catch (error) {

@@ -155,24 +155,26 @@ export default class App {
             throw new WebhookException("No transactions are available in content.transactions");
         }
 
-        if (req.body.content.transactions[0].type !== "withdrawal") {
+        const transaction = req.body.content.transactions[0];
+
+        if (transaction.type !== "withdrawal") {
             throw new WebhookException("content.transactions[0].type has to be 'withdrawal'. Transaction will be ignored.");
         }
 
-        if (req.body.content.transactions[0].category_name !== null) {
-            throw new WebhookException("content.transactions[0].category_id is already set. Transaction will be ignored.");
+        if (transaction.category_name !== null && transaction.budget_name !== null) {
+            throw new WebhookException("content.transactions[0].category_name and content.transactions[0].budget_name are already set. Transaction will be ignored.");
         }
 
-        if (!req.body.content.transactions[0].description) {
+        if (!transaction.description) {
             throw new WebhookException("Missing content.transactions[0].description");
         }
 
-        if (!req.body.content.transactions[0].destination_name) {
+        if (!transaction.destination_name) {
             throw new WebhookException("Missing content.transactions[0].destination_name");
         }
 
-        const destinationName = req.body.content.transactions[0].destination_name;
-        const description = req.body.content.transactions[0].description
+        const destinationName = transaction.destination_name;
+        const description = transaction.description
 
         const job = this.#jobList.createJob({
             destinationName,
@@ -182,45 +184,56 @@ export default class App {
         this.#queue.push(async () => {
             this.#jobList.setJobInProgress(job.id);
 
-            const firefly = this.#getFireflyService();
-            const mistral = this.#getMistralService();
-            const categories = await firefly.getCategories();
-            const budgets = await firefly.getBudgets();
-            let recentTransactions = [];
-
             try {
-                recentTransactions = await firefly.getRecentTransactionsForDestination(
-                    destinationName,
-                    App.#DESTINATION_HISTORY_LIMIT,
-                    req.body.content.transactions[0].transaction_journal_id ?? null
-                );
+                const firefly = this.#getFireflyService();
+                const mistral = this.#getMistralService();
+                const categories = await firefly.getCategories();
+                const budgets = await firefly.getBudgets();
+                let recentTransactions = [];
+
+                try {
+                    recentTransactions = await firefly.getRecentTransactionsForDestination(
+                        destinationName,
+                        App.#DESTINATION_HISTORY_LIMIT,
+                        req.body.content.transactions[0].transaction_journal_id ?? null
+                    );
+                } catch (error) {
+                    console.warn(`Could not load recent transactions for destination "${destinationName}": ${error.message}`);
+                }
+
+                const allLists = new Map();
+
+                allLists.set('categories', Array.from(categories.keys()));
+                allLists.set('budgets', Array.from(budgets.keys()));
+
+                const classification = await mistral.classify(allLists, destinationName, description, recentTransactions);
+
+                const newData = Object.assign({}, job.data);
+                newData.category = transaction.category_name ?? classification?.category ?? null;
+                newData.budget = transaction.budget_name ?? classification?.budget ?? null;
+                newData.prompt = classification?.prompt ?? null;
+                newData.response = classification?.response ?? null;
+                newData.historyCount = recentTransactions.length;
+                newData.error = null;
+
+                this.#jobList.updateJobData(job.id, newData);
+
+                const category_id = transaction.category_name === null && categories.has(classification?.category)
+                    ? categories.get(classification.category)
+                    : -1;
+                const budget_id = transaction.budget_name === null && budgets.has(classification?.budget)
+                    ? budgets.get(classification.budget)
+                    : -1;
+
+                if (category_id !== -1 || budget_id !== -1) {
+                    await firefly.setCategoryAndBudget(req.body.content.id, req.body.content.transactions, category_id, budget_id);
+                }
+
+                this.#jobList.setJobFinished(job.id);
             } catch (error) {
-                console.warn(`Could not load recent transactions for destination "${destinationName}": ${error.message}`);
+                console.error(`Job ${job.id} failed:`, error);
+                this.#jobList.setJobFailed(job.id, error.message);
             }
-
-            const allLists = new Map();
-
-            allLists.set('categories', Array.from(categories.keys()));
-            allLists.set('budgets', Array.from(budgets.keys()));
-
-            const classification = await mistral.classify(allLists, destinationName, description, recentTransactions);
-
-            const newData = Object.assign({}, job.data);
-            newData.category = classification?.category ?? null;
-            newData.budget = classification?.budget ?? null;
-            newData.prompt = classification?.prompt ?? null;
-            newData.response = classification?.response ?? null;
-            newData.historyCount = recentTransactions.length;
-
-            this.#jobList.updateJobData(job.id, newData);
-
-            if (classification?.category || classification?.budget) {
-                const category_id = categories.has(classification.category) ? categories.get(classification.category) : -1;
-                const budget_id = budgets.has(classification.budget) ? budgets.get(classification.budget) : -1;
-                await firefly.setCategoryAndBudget(req.body.content.id, req.body.content.transactions, category_id, budget_id);
-            }
-
-            this.#jobList.setJobFinished(job.id);
         });
     }
 }
