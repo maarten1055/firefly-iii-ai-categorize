@@ -25,7 +25,8 @@
             text-align: center;
         }
 
-        .toolbar {
+        .toolbar,
+        .section-heading {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -77,11 +78,78 @@
             color: #6b7280;
         }
 
+        .status-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+
+        .status-pill.queued {
+            background: #e0f2fe;
+            color: #075985;
+        }
+
+        .status-pill.in_progress {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-pill.finished {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-pill.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
         .job {
-            border: solid 1px;
+            border: solid 1px #d1d5db;
             border-radius: 5px;
             margin-bottom: 2em;
             padding: 24px;
+            background: #fff;
+        }
+
+        .job.queued {
+            border-color: #7dd3fc;
+        }
+
+        .job.in_progress {
+            border-color: #fbbf24;
+            background: #fffbeb;
+        }
+
+        .job.finished {
+            border-color: #86efac;
+            background: #f0fdf4;
+        }
+
+        .job.failed {
+            border-color: #fca5a5;
+            background: #fef2f2;
+        }
+
+        .error-box {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 5px;
+            border: solid 1px #fca5a5;
+            background: #fff1f2;
+            color: #7f1d1d;
         }
 
         pre {
@@ -106,7 +174,12 @@
             <div id="diagnostics-checks" class="checks"></div>
         </section>
         <section>
-            <h2>Jobs</h2>
+            <div class="section-heading">
+                <h2>Jobs</h2>
+                <div id="job-status-summary" class="status-summary">
+                    <span class="status-pill">No jobs yet</span>
+                </div>
+            </div>
             <div id="mount"></div>
             <!--        <article class="job">-->
             <!--            <div><strong>Status:</strong> <span>queued</span></div>-->
@@ -139,6 +212,8 @@
         const diagnosticsSummary = document.getElementById('diagnostics-summary');
         const diagnosticsChecks = document.getElementById('diagnostics-checks');
         const diagnosticsButton = document.getElementById('run-diagnostics');
+        const jobStatusSummary = document.getElementById('job-status-summary');
+        const jobsById = new Map();
 
         diagnosticsButton.addEventListener('click', async () => {
             diagnosticsButton.disabled = true;
@@ -165,78 +240,116 @@
 
         socket.on('jobs', jobs => {
             console.log('jobs', jobs);
-
-            jobs.sort((a, b) => {
-                return new Date(b.created) - new Date(a.created);
-            })
-
-            jobs.forEach(job => {
-                const element = document.createElement('div');
-                element.innerHTML = renderJob(job);
-                mount.appendChild(element)
-            });
+            jobsById.clear();
+            jobs.forEach(job => jobsById.set(job.id, job));
+            renderJobs();
         });
 
         socket.on('job created', e => {
             console.log('job created', e);
-            const element = document.createElement('div');
-            element.innerHTML = renderJob(e.job);
-            mount.prepend(element);
-        })
+            jobsById.set(e.job.id, e.job);
+            renderJobs();
+        });
 
         socket.on('job updated', e => {
-            console.log('job updated', e)
+            console.log('job updated', e);
+            jobsById.set(e.job.id, e.job);
+            renderJobs();
+        });
 
-            const element = document.createElement('div');
-            element.innerHTML = renderJob(e.job);
+        const renderJobs = () => {
+            const jobs = Array.from(jobsById.values())
+                .sort((a, b) => new Date(b.created) - new Date(a.created));
 
-            const oldElement = document.querySelector(`[data-job-id="${e.job.id}"]`);
-            oldElement.before(element);
-            oldElement.remove();
-        })
+            mount.innerHTML = jobs.map(renderJob).join('');
+            renderJobStatusSummary(jobs);
+        };
+
+        const renderJobStatusSummary = (jobs) => {
+            if (jobs.length === 0) {
+                jobStatusSummary.innerHTML = '<span class="status-pill">No jobs yet</span>';
+                return;
+            }
+
+            const counts = {
+                queued: 0,
+                in_progress: 0,
+                finished: 0,
+                failed: 0,
+            };
+
+            jobs.forEach(job => {
+                counts[job.status] = (counts[job.status] ?? 0) + 1;
+            });
+
+            jobStatusSummary.innerHTML = ['queued', 'in_progress', 'finished', 'failed']
+                .map(status => `<span class="status-pill ${status}">${formatStatus(status)}: ${counts[status] ?? 0}</span>`)
+                .join('');
+        };
+
+        const formatStatus = (status) => {
+            switch (status) {
+                case 'in_progress':
+                    return 'In progress';
+                case 'finished':
+                    return 'Finished';
+                case 'failed':
+                    return 'Failed';
+                case 'queued':
+                default:
+                    return 'Queued';
+            }
+        };
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
 
         const renderJob = (job) => {
-            return `<article class="job" data-job-id="${job.id}">
-            <div><strong>ID:</strong> <span>${job.id}</span></div>
-            <div><strong>Status:</strong> <span>${job.status}</span></div>
+            return `<article class="job ${escapeHtml(job.status)}" data-job-id="${escapeHtml(job.id)}">
+            <div><strong>ID:</strong> <span>${escapeHtml(job.id)}</span></div>
+            <div><strong>Status:</strong> <span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(formatStatus(job.status))}</span></div>
             <div><strong>Created:</strong>
                 <time>${Intl.DateTimeFormat(undefined, {
                 dateStyle: 'medium',
                 timeStyle: 'medium'
             }).format(new Date(job.created))}</time>
             </div>
-            <div><strong>Destination name:</strong> <span>${job.data?.destinationName || ''}</span></div>
-            <div><strong>Description:</strong> <span>${job.data?.description || ''}</span>
-            <div><strong>Guessed category:</strong> <span>${job.data?.category ? job.data.category : '<em>Not yet classified</em>'}</span>
-            <div><strong>Guessed Budget:</strong> <span>${job.data?.budget ? job.data.budget : '<em>Not yet classified</em>'}</span>
-            </div>
+            <div><strong>Destination name:</strong> <span>${escapeHtml(job.data?.destinationName || '')}</span></div>
+            <div><strong>Description:</strong> <span>${escapeHtml(job.data?.description || '')}</span></div>
+            <div><strong>Guessed category:</strong> <span>${job.data?.category ? escapeHtml(job.data.category) : '<em>Not yet classified</em>'}</span></div>
+            <div><strong>Guessed budget:</strong> <span>${job.data?.budget ? escapeHtml(job.data.budget) : '<em>Not yet classified</em>'}</span></div>
+            ${job.data?.error ? `<div class="error-box"><strong>Error:</strong> <span>${escapeHtml(job.data.error)}</span></div>` : ''}
             ${job.data?.prompt ? `<div><strong>Prompt:</strong><br>
                 <details>
                     <summary>Show</summary>
-                    <pre>${job.data.prompt}</pre>
+                    <pre>${escapeHtml(job.data.prompt)}</pre>
                 </details>
             </div>` : ''}
-            ${job.data?.response ? `<div><strong>Open AI's response:</strong>
+            ${job.data?.response ? `<div><strong>Model response:</strong>
                  <details>
                     <summary>Show</summary>
-                    <pre>${job.data.response}</pre>
+                    <pre>${escapeHtml(job.data.response)}</pre>
                  </details>
             </div>` : ''}
-        </article>`
-        }
+        </article>`;
+        };
 
         const renderCheck = (check) => {
             const details = check.ok
                 ? Object.entries(check.details)
-                    .map(([key, value]) => `<div><strong>${key}:</strong> <span>${value}</span></div>`)
+                    .map(([key, value]) => `<div><strong>${escapeHtml(key)}:</strong> <span>${escapeHtml(value)}</span></div>`)
                     .join('')
-                : `<div><strong>Error:</strong> <span>${check.error}</span></div>`;
+                : `<div><strong>Error:</strong> <span>${escapeHtml(check.error)}</span></div>`;
 
             return `<article class="check ${check.ok ? 'ok' : 'error'}">
-                <div><strong>${check.name}</strong> <span>${check.ok ? 'OK' : 'Failed'}</span></div>
+                <div><strong>${escapeHtml(check.name)}</strong> <span>${check.ok ? 'OK' : 'Failed'}</span></div>
                 ${details}
             </article>`;
-        }
+        };
     </script>
 </body>
 
