@@ -65,6 +65,9 @@ export default class App {
         }
 
         this.#express.get('/api/diagnostics', this.#onDiagnostics.bind(this))
+        this.#express.get('/api/transactions/uncategorized', this.#onGetUncategorizedTransactions.bind(this))
+        this.#express.post('/api/transactions/classify', this.#onClassifyTransaction.bind(this))
+        this.#express.post('/api/transactions/apply', this.#onApplyTransactionUpdate.bind(this))
         this.#express.post('/api/jobs/:id/fill-missing', this.#onFillMissingJobValue.bind(this))
         this.#express.post('/webhook', this.#onWebhook.bind(this))
 
@@ -99,6 +102,170 @@ export default class App {
         const hasBudget = Boolean(data?.budget);
 
         return hasCategory !== hasBudget ? "partial" : "finished";
+    }
+
+    #getClassificationStatus(data) {
+        const hasCategory = Boolean(data?.category);
+        const hasBudget = Boolean(data?.budget);
+
+        if (hasCategory && hasBudget) {
+            return "ready";
+        }
+
+        if (hasCategory || hasBudget) {
+            return "partial";
+        }
+
+        return "unclassified";
+    }
+
+    async #classifyTransactionSelection(transaction) {
+        const destinationName = transaction.destinationName ?? transaction.destination_name;
+        const description = transaction.description;
+        const existingCategory = transaction.category ?? transaction.category_name ?? null;
+        const existingBudget = transaction.budget ?? transaction.budget_name ?? null;
+        const transactionJournalId = transaction.transactionJournalId ?? transaction.transaction_journal_id ?? null;
+
+        if (!description) {
+            throw new WebhookException("Missing transaction.description");
+        }
+
+        if (!destinationName) {
+            throw new WebhookException("Missing transaction.destinationName");
+        }
+
+        const firefly = this.#getFireflyService();
+        const mistral = this.#getMistralService();
+        const categories = await firefly.getCategories();
+        const budgets = await firefly.getBudgets();
+        let recentTransactions = [];
+
+        try {
+            recentTransactions = await firefly.getRecentTransactionsForDestination(
+                destinationName,
+                App.#DESTINATION_HISTORY_LIMIT,
+                transactionJournalId
+            );
+        } catch (error) {
+            console.warn(`Could not load recent transactions for destination "${destinationName}": ${error.message}`);
+        }
+
+        const allLists = new Map();
+        allLists.set('categories', Array.from(categories.keys()));
+        allLists.set('budgets', Array.from(budgets.keys()));
+
+        const classification = await mistral.classify(allLists, destinationName, description, recentTransactions);
+        const data = {
+            category: existingCategory ?? classification?.category ?? null,
+            budget: existingBudget ?? classification?.budget ?? null,
+            prompt: classification?.prompt ?? null,
+            response: classification?.response ?? null,
+            historyCount: recentTransactions.length,
+            error: null,
+        };
+
+        return {
+            categories,
+            budgets,
+            data,
+        };
+    }
+
+    async #onGetUncategorizedTransactions(req, res) {
+        try {
+            const page = Math.max(1, Number.parseInt(req.query?.page, 10) || 1);
+            const limit = Math.max(1, Math.min(Number.parseInt(req.query?.limit, 10) || 20, 100));
+            const result = await this.#getFireflyService().getUncategorizedTransactions(page, limit);
+
+            res.status(200).json({
+                ok: true,
+                ...result,
+            });
+        } catch (error) {
+            console.error('Could not load uncategorized transactions:', error);
+            res.status(500).json({
+                ok: false,
+                error: error.message,
+            });
+        }
+    }
+
+    async #onClassifyTransaction(req, res) {
+        try {
+            const transaction = req.body?.transaction;
+
+            if (!transaction) {
+                throw new WebhookException("Missing transaction payload.");
+            }
+
+            const {data} = await this.#classifyTransactionSelection(transaction);
+
+            res.status(200).json({
+                ok: true,
+                classification: {
+                    ...data,
+                    status: this.#getClassificationStatus(data),
+                    canUpdate: Boolean(data.category || data.budget),
+                }
+            });
+        } catch (error) {
+            console.error('Could not classify transaction:', error);
+            res.status(error instanceof WebhookException ? 400 : 500).json({
+                ok: false,
+                error: error.message,
+            });
+        }
+    }
+
+    async #onApplyTransactionUpdate(req, res) {
+        try {
+            const transaction = req.body?.transaction;
+            const classification = req.body?.classification;
+
+            if (!transaction || !classification) {
+                throw new WebhookException("Missing transaction or classification payload.");
+            }
+
+            if (!transaction.transactionId || !Array.isArray(transaction.transactions) || transaction.transactions.length === 0) {
+                throw new WebhookException("This transaction does not contain enough Firefly III data to update.");
+            }
+
+            const firefly = this.#getFireflyService();
+            const categories = await firefly.getCategories();
+            const budgets = await firefly.getBudgets();
+            const currentCategory = transaction.category ?? null;
+            const currentBudget = transaction.budget ?? null;
+            const categoryId = currentCategory === null && categories.has(classification.category)
+                ? categories.get(classification.category)
+                : -1;
+            const budgetId = currentBudget === null && budgets.has(classification.budget)
+                ? budgets.get(classification.budget)
+                : -1;
+
+            if (categoryId === -1 && budgetId === -1) {
+                throw new WebhookException("No valid category or budget is available to update.");
+            }
+
+            await firefly.setCategoryAndBudget(transaction.transactionId, transaction.transactions, categoryId, budgetId);
+
+            const updatedTransaction = {
+                ...transaction,
+                category: currentCategory ?? classification.category ?? null,
+                budget: currentBudget ?? classification.budget ?? null,
+            };
+
+            res.status(200).json({
+                ok: true,
+                transaction: updatedTransaction,
+                status: this.#getClassificationStatus(updatedTransaction),
+            });
+        } catch (error) {
+            console.error('Could not apply transaction update:', error);
+            res.status(error instanceof WebhookException ? 400 : 500).json({
+                ok: false,
+                error: error.message,
+            });
+        }
     }
 
     async #onFillMissingJobValue(req, res) {
@@ -279,49 +446,26 @@ export default class App {
             this.#jobList.setJobInProgress(job.id);
 
             try {
-                const firefly = this.#getFireflyService();
-                const mistral = this.#getMistralService();
-                const categories = await firefly.getCategories();
-                const budgets = await firefly.getBudgets();
-                let recentTransactions = [];
+                const {categories, budgets, data} = await this.#classifyTransactionSelection({
+                    ...transaction,
+                    transactionJournalId: transaction.transaction_journal_id ?? null,
+                });
 
-                try {
-                    recentTransactions = await firefly.getRecentTransactionsForDestination(
-                        destinationName,
-                        App.#DESTINATION_HISTORY_LIMIT,
-                        req.body.content.transactions[0].transaction_journal_id ?? null
-                    );
-                } catch (error) {
-                    console.warn(`Could not load recent transactions for destination "${destinationName}": ${error.message}`);
-                }
-
-                const allLists = new Map();
-
-                allLists.set('categories', Array.from(categories.keys()));
-                allLists.set('budgets', Array.from(budgets.keys()));
-
-                const classification = await mistral.classify(allLists, destinationName, description, recentTransactions);
-
-                const newData = Object.assign({}, job.data);
-                newData.category = transaction.category_name ?? classification?.category ?? null;
-                newData.budget = transaction.budget_name ?? classification?.budget ?? null;
-                newData.prompt = classification?.prompt ?? null;
-                newData.response = classification?.response ?? null;
-                newData.historyCount = recentTransactions.length;
-                newData.error = null;
-                newData.manualUpdate = null;
+                const newData = Object.assign({}, job.data, data, {
+                    manualUpdate: null,
+                });
 
                 this.#jobList.updateJobData(job.id, newData);
 
-                const category_id = transaction.category_name === null && categories.has(classification?.category)
-                    ? categories.get(classification.category)
+                const category_id = transaction.category_name === null && categories.has(data.category)
+                    ? categories.get(data.category)
                     : -1;
-                const budget_id = transaction.budget_name === null && budgets.has(classification?.budget)
-                    ? budgets.get(classification.budget)
+                const budget_id = transaction.budget_name === null && budgets.has(data.budget)
+                    ? budgets.get(data.budget)
                     : -1;
 
                 if (category_id !== -1 || budget_id !== -1) {
-                    await firefly.setCategoryAndBudget(req.body.content.id, req.body.content.transactions, category_id, budget_id);
+                    await this.#getFireflyService().setCategoryAndBudget(req.body.content.id, req.body.content.transactions, category_id, budget_id);
                 }
 
                 this.#jobList.setJobFinished(job.id, this.#getCompletionStatus(newData));

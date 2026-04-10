@@ -46,6 +46,81 @@ export default class FireflyService {
         return bills;
     }
 
+    async getUncategorizedTransactions(page = 1, limit = 20) {
+        const normalizedPage = Math.max(1, Number.parseInt(page, 10) || 1);
+        const normalizedLimit = Math.max(1, Math.min(Number.parseInt(limit, 10) || 20, 100));
+        const startIndex = (normalizedPage - 1) * normalizedLimit;
+        const collected = [];
+        let matchesSeen = 0;
+        let apiPage = 1;
+
+        while (collected.length < normalizedLimit + 1) {
+            const params = new URLSearchParams({
+                page: String(apiPage),
+                limit: "100",
+                type: "withdrawal"
+            });
+
+            const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/transactions?${params.toString()}`);
+            const data = await response.json();
+            const groups = data.data ?? [];
+
+            for (const group of groups) {
+                const transactions = group.attributes?.transactions ?? [];
+
+                for (const transaction of transactions) {
+                    if (transaction.type !== "withdrawal") {
+                        continue;
+                    }
+
+                    if (transaction.category_name !== null && transaction.budget_name !== null) {
+                        continue;
+                    }
+
+                    if (matchesSeen++ < startIndex) {
+                        continue;
+                    }
+
+                    collected.push({
+                        transactionId: group.id,
+                        transactionJournalId: transaction.transaction_journal_id,
+                        date: transaction.date,
+                        description: transaction.description,
+                        destinationName: transaction.destination_name,
+                        sourceName: transaction.source_name,
+                        amount: transaction.amount,
+                        currencyCode: transaction.currency_code,
+                        category: transaction.category_name,
+                        budget: transaction.budget_name,
+                        tags: transaction.tags ?? [],
+                        transactions,
+                    });
+
+                    if (collected.length >= normalizedLimit + 1) {
+                        break;
+                    }
+                }
+
+                if (collected.length >= normalizedLimit + 1) {
+                    break;
+                }
+            }
+
+            if (groups.length === 0 || !data.meta?.pagination || apiPage >= data.meta.pagination.total_pages || collected.length >= normalizedLimit + 1) {
+                break;
+            }
+
+            apiPage += 1;
+        }
+
+        return {
+            page: normalizedPage,
+            limit: normalizedLimit,
+            hasNextPage: collected.length > normalizedLimit,
+            items: collected.slice(0, normalizedLimit),
+        };
+    }
+
     async getRecentTransactionsForDestination(destinationName, limit = 5, excludeJournalId = null) {
         const params = new URLSearchParams({
             query: `to:"${this.#escapeSearchValue(destinationName)}"`,
