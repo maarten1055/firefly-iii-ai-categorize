@@ -44,6 +44,15 @@
             color: #fff;
         }
 
+        .button.secondary {
+            background: #2563eb;
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .diagnostics {
             border: solid 1px #d1d5db;
             border-radius: 5px;
@@ -111,6 +120,11 @@
             color: #166534;
         }
 
+        .status-pill.partial {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
         .status-pill.failed {
             background: #fee2e2;
             color: #991b1b;
@@ -138,6 +152,11 @@
             background: #f0fdf4;
         }
 
+        .job.partial {
+            border-color: #c4b5fd;
+            background: #f5f3ff;
+        }
+
         .job.failed {
             border-color: #fca5a5;
             background: #fef2f2;
@@ -150,6 +169,14 @@
             border: solid 1px #fca5a5;
             background: #fff1f2;
             color: #7f1d1d;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-top: 12px;
         }
 
         pre {
@@ -214,6 +241,7 @@
         const diagnosticsButton = document.getElementById('run-diagnostics');
         const jobStatusSummary = document.getElementById('job-status-summary');
         const jobsById = new Map();
+        const pendingFillJobIds = new Set();
 
         diagnosticsButton.addEventListener('click', async () => {
             diagnosticsButton.disabled = true;
@@ -257,6 +285,48 @@
             renderJobs();
         });
 
+        mount.addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-fill-missing-job-id]');
+            if (!button) {
+                return;
+            }
+
+            const jobId = button.getAttribute('data-fill-missing-job-id');
+            if (!jobId || pendingFillJobIds.has(jobId)) {
+                return;
+            }
+
+            pendingFillJobIds.add(jobId);
+            renderJobs();
+
+            try {
+                const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/fill-missing`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Could not update the missing value.');
+                }
+
+                if (result.job?.id) {
+                    jobsById.set(result.job.id, result.job);
+                }
+            } catch (error) {
+                const job = jobsById.get(jobId);
+                if (job) {
+                    job.data = {
+                        ...(job.data ?? {}),
+                        error: error.message,
+                    };
+                    jobsById.set(jobId, job);
+                }
+            } finally {
+                pendingFillJobIds.delete(jobId);
+                renderJobs();
+            }
+        });
+
         const renderJobs = () => {
             const jobs = Array.from(jobsById.values())
                 .sort((a, b) => new Date(b.created) - new Date(a.created));
@@ -274,6 +344,7 @@
             const counts = {
                 queued: 0,
                 in_progress: 0,
+                partial: 0,
                 finished: 0,
                 failed: 0,
             };
@@ -282,7 +353,7 @@
                 counts[job.status] = (counts[job.status] ?? 0) + 1;
             });
 
-            jobStatusSummary.innerHTML = ['queued', 'in_progress', 'finished', 'failed']
+            jobStatusSummary.innerHTML = ['queued', 'in_progress', 'partial', 'finished', 'failed']
                 .map(status => `<span class="status-pill ${status}">${formatStatus(status)}: ${counts[status] ?? 0}</span>`)
                 .join('');
         };
@@ -291,6 +362,8 @@
             switch (status) {
                 case 'in_progress':
                     return 'In progress';
+                case 'partial':
+                    return 'Partial';
                 case 'finished':
                     return 'Finished';
                 case 'failed':
@@ -301,6 +374,12 @@
             }
         };
 
+        const canFillMissing = (job) => {
+            const hasCategory = Boolean(job.data?.category);
+            const hasBudget = Boolean(job.data?.budget);
+            return job.status === 'partial' && hasCategory !== hasBudget;
+        };
+
         const escapeHtml = (value) => String(value ?? '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -309,6 +388,10 @@
             .replace(/'/g, '&#39;');
 
         const renderJob = (job) => {
+            const partialField = job.data?.category ? 'budget' : 'category';
+            const canFill = canFillMissing(job);
+            const isUpdating = pendingFillJobIds.has(job.id);
+
             return `<article class="job ${escapeHtml(job.status)}" data-job-id="${escapeHtml(job.id)}">
             <div><strong>ID:</strong> <span>${escapeHtml(job.id)}</span></div>
             <div><strong>Status:</strong> <span class="status-pill ${escapeHtml(job.status)}">${escapeHtml(formatStatus(job.status))}</span></div>
@@ -322,6 +405,8 @@
             <div><strong>Description:</strong> <span>${escapeHtml(job.data?.description || '')}</span></div>
             <div><strong>Guessed category:</strong> <span>${job.data?.category ? escapeHtml(job.data.category) : '<em>Not yet classified</em>'}</span></div>
             <div><strong>Guessed budget:</strong> <span>${job.data?.budget ? escapeHtml(job.data.budget) : '<em>Not yet classified</em>'}</span></div>
+            ${canFill ? `<div class="job-actions"><span class="muted">Only the ${escapeHtml(partialField)} is still missing.</span><button class="button secondary" type="button" data-fill-missing-job-id="${escapeHtml(job.id)}" ${isUpdating ? 'disabled' : ''}>${isUpdating ? 'Updating...' : `Fill missing ${escapeHtml(partialField)} with same value`}</button></div>` : ''}
+            ${job.data?.manualUpdate ? `<div class="muted">${escapeHtml(job.data.manualUpdate)}</div>` : ''}
             ${job.data?.error ? `<div class="error-box"><strong>Error:</strong> <span>${escapeHtml(job.data.error)}</span></div>` : ''}
             ${job.data?.prompt ? `<div><strong>Prompt:</strong><br>
                 <details>

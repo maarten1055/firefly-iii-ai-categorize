@@ -16,6 +16,10 @@ export default class JobList {
         return this.#jobs;
     }
 
+    getJob(id) {
+        return this.#jobs.get(id);
+    }
+
     createJob(data) {
         const id = uuid()
         const created = new Date();
@@ -45,9 +49,9 @@ export default class JobList {
         this.#eventEmitter.emit('job updated', {job, jobs: Array.from(this.#jobs.values())});
     }
 
-    setJobFinished(id) {
+    setJobFinished(id, status = "finished") {
         const job = this.#jobs.get(id);
-        job.status = "finished";
+        job.status = status;
         this.#eventEmitter.emit('job updated', {job, jobs: Array.from(this.#jobs.values())});
     }
 

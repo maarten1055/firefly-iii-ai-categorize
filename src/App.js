@@ -65,6 +65,7 @@ export default class App {
         }
 
         this.#express.get('/api/diagnostics', this.#onDiagnostics.bind(this))
+        this.#express.post('/api/jobs/:id/fill-missing', this.#onFillMissingJobValue.bind(this))
         this.#express.post('/webhook', this.#onWebhook.bind(this))
 
         this.#server.listen(this.#PORT, async () => {
@@ -91,6 +92,93 @@ export default class App {
         }
 
         return this.#mistral;
+    }
+
+    #getCompletionStatus(data) {
+        const hasCategory = Boolean(data?.category);
+        const hasBudget = Boolean(data?.budget);
+
+        return hasCategory !== hasBudget ? "partial" : "finished";
+    }
+
+    async #onFillMissingJobValue(req, res) {
+        const job = this.#jobList.getJob(req.params.id);
+
+        if (!job) {
+            res.status(404).json({
+                ok: false,
+                error: `Job ${req.params.id} was not found.`
+            });
+            return;
+        }
+
+        try {
+            const categoryName = job.data?.category ?? null;
+            const budgetName = job.data?.budget ?? null;
+
+            if ((!categoryName && !budgetName) || (categoryName && budgetName)) {
+                throw new WebhookException("This job is not partially processed.");
+            }
+
+            if (!job.data?.transactionId || !Array.isArray(job.data?.transactions) || job.data.transactions.length === 0) {
+                throw new WebhookException("This job does not contain enough transaction data to update Firefly III.");
+            }
+
+            const firefly = this.#getFireflyService();
+            const categories = await firefly.getCategories();
+            const budgets = await firefly.getBudgets();
+            let categoryId = -1;
+            let budgetId = -1;
+            let copiedValue = null;
+            let updatedField = null;
+
+            if (categoryName && !budgetName) {
+                if (!budgets.has(categoryName)) {
+                    throw new WebhookException(`No budget exists with the same name as category "${categoryName}".`);
+                }
+
+                budgetId = budgets.get(categoryName);
+                copiedValue = categoryName;
+                updatedField = "budget";
+            } else if (budgetName && !categoryName) {
+                if (!categories.has(budgetName)) {
+                    throw new WebhookException(`No category exists with the same name as budget "${budgetName}".`);
+                }
+
+                categoryId = categories.get(budgetName);
+                copiedValue = budgetName;
+                updatedField = "category";
+            }
+
+            await firefly.setCategoryAndBudget(job.data.transactionId, job.data.transactions, categoryId, budgetId);
+
+            const updatedData = {
+                ...(job.data ?? {}),
+                category: categoryName ?? copiedValue,
+                budget: budgetName ?? copiedValue,
+                error: null,
+                manualUpdate: `Filled missing ${updatedField} with "${copiedValue}".`,
+            };
+
+            this.#jobList.updateJobData(job.id, updatedData);
+            this.#jobList.setJobFinished(job.id, this.#getCompletionStatus(updatedData));
+
+            res.status(200).json({
+                ok: true,
+                job: this.#jobList.getJob(job.id)
+            });
+        } catch (error) {
+            console.error(`Manual fill for job ${job.id} failed:`, error);
+            this.#jobList.updateJobData(job.id, {
+                ...(job.data ?? {}),
+                error: error.message,
+            });
+
+            res.status(error instanceof WebhookException ? 400 : 500).json({
+                ok: false,
+                error: error.message,
+            });
+        }
     }
 
     async #onDiagnostics(req, res) {
@@ -178,7 +266,13 @@ export default class App {
 
         const job = this.#jobList.createJob({
             destinationName,
-            description
+            description,
+            transactionId: req.body.content.id,
+            transactions: req.body.content.transactions,
+            category: transaction.category_name ?? null,
+            budget: transaction.budget_name ?? null,
+            error: null,
+            manualUpdate: null,
         });
 
         this.#queue.push(async () => {
@@ -215,6 +309,7 @@ export default class App {
                 newData.response = classification?.response ?? null;
                 newData.historyCount = recentTransactions.length;
                 newData.error = null;
+                newData.manualUpdate = null;
 
                 this.#jobList.updateJobData(job.id, newData);
 
@@ -229,7 +324,7 @@ export default class App {
                     await firefly.setCategoryAndBudget(req.body.content.id, req.body.content.transactions, category_id, budget_id);
                 }
 
-                this.#jobList.setJobFinished(job.id);
+                this.#jobList.setJobFinished(job.id, this.#getCompletionStatus(newData));
             } catch (error) {
                 console.error(`Job ${job.id} failed:`, error);
                 this.#jobList.setJobFailed(job.id, error.message);
