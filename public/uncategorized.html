@@ -162,6 +162,33 @@
             margin-top: 12px;
         }
 
+        .selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .selection-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .selection-grid select {
+            border: solid 1px #d1d5db;
+            border-radius: 6px;
+            padding: 8px 10px;
+            background: #fff;
+            color: #111827;
+        }
+
+        .selection-grid select:disabled {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
         .pagination {
             display: flex;
             align-items: center;
@@ -227,7 +254,12 @@
         limit: Number(pageSizeSelect.value),
         hasNextPage: false,
         items: [],
+        options: {
+            categories: [],
+            budgets: [],
+        },
         classifications: new Map(),
+        selections: new Map(),
         pendingClassifications: new Set(),
         pendingUpdates: new Set(),
     };
@@ -280,6 +312,27 @@
         }
     };
 
+    const ensureSelections = (item) => {
+        const key = getItemKey(item);
+
+        if (!state.selections.has(key)) {
+            state.selections.set(key, {
+                category: item.category || '',
+                budget: item.budget || '',
+            });
+        }
+
+        return state.selections.get(key);
+    };
+
+    const buildOptionsMarkup = (options, selectedValue, emptyLabel) => {
+        const normalizedSelected = selectedValue || '';
+
+        return [`<option value="">${escapeHtml(emptyLabel)}</option>`]
+            .concat(options.map(option => `<option value="${escapeHtml(option)}" ${normalizedSelected === option ? 'selected' : ''}>${escapeHtml(option)}</option>`))
+            .join('');
+    };
+
     const renderTransactions = () => {
         pageIndicator.textContent = `Page ${state.page}`;
         prevPageButton.disabled = state.page <= 1;
@@ -294,9 +347,12 @@
             const key = getItemKey(item);
             const missing = getMissingLabel(item);
             const classification = state.classifications.get(key);
+            const selections = ensureSelections(item);
             const classifyBusy = state.pendingClassifications.has(key);
             const updateBusy = state.pendingUpdates.has(key);
-            const canApply = Boolean(classification && classification.canUpdate) && !updateBusy;
+            const canApply = Boolean((!item.category && selections.category) || (!item.budget && selections.budget)) && !updateBusy;
+            const categoryOptions = buildOptionsMarkup(state.options.categories, selections.category, item.category ? 'Current category is locked' : 'Select a category');
+            const budgetOptions = buildOptionsMarkup(state.options.budgets, selections.budget, item.budget ? 'Current budget is locked' : 'Select a budget');
 
             return `<article class="transaction ${escapeHtml(missing.className)}">
                 <div class="row"><strong>Date:</strong> <span>${escapeHtml(item.date || '')}</span></div>
@@ -313,6 +369,20 @@
                     <button class="button secondary" type="button" data-action="classify" data-key="${escapeHtml(key)}" ${classifyBusy ? 'disabled' : ''}>${classifyBusy ? 'Loading suggestion...' : 'Get category/budget'}</button>
                     <button class="button success" type="button" data-action="apply" data-key="${escapeHtml(key)}" ${(canApply ? '' : 'disabled')}>${updateBusy ? 'Updating...' : 'Apply update'}</button>
                 </div>
+                <div class="selection-grid">
+                    <label>
+                        Category
+                        <select data-selection="category" data-key="${escapeHtml(key)}" ${item.category ? 'disabled' : ''}>
+                            ${categoryOptions}
+                        </select>
+                    </label>
+                    <label>
+                        Budget
+                        <select data-selection="budget" data-key="${escapeHtml(key)}" ${item.budget ? 'disabled' : ''}>
+                            ${budgetOptions}
+                        </select>
+                    </label>
+                </div>
                 ${classification ? `<div class="suggestion">
                     <div><strong>Suggested category:</strong> <span>${classification.category ? escapeHtml(classification.category) : '<em>None</em>'}</span></div>
                     <div><strong>Suggested budget:</strong> <span>${classification.budget ? escapeHtml(classification.budget) : '<em>None</em>'}</span></div>
@@ -324,6 +394,20 @@
                 ${classification && classification.error ? `<div class="message-box error">${escapeHtml(classification.error)}</div>` : ''}
             </article>`;
         }).join('');
+    };
+
+    const loadOptions = async () => {
+        const response = await fetch('/api/transactions/options');
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Could not load categories and budgets.');
+        }
+
+        state.options = {
+            categories: Array.isArray(result.categories) ? result.categories : [],
+            budgets: Array.isArray(result.budgets) ? result.budgets : [],
+        };
     };
 
     const loadTransactions = async () => {
@@ -342,6 +426,7 @@
             state.items = Array.isArray(result.items) ? result.items : [];
             state.hasNextPage = Boolean(result.hasNextPage);
             state.classifications.clear();
+            state.selections.clear();
 
             summary.textContent = `Showing up to ${state.limit} transactions on page ${state.page}.`;
             renderTransactions();
@@ -376,6 +461,15 @@
             }
 
             state.classifications.set(key, result.classification);
+            const selections = ensureSelections(item);
+
+            if (!item.category && !selections.category && result.classification.category) {
+                selections.category = result.classification.category;
+            }
+
+            if (!item.budget && !selections.budget && result.classification.budget) {
+                selections.budget = result.classification.budget;
+            }
         } catch (error) {
             state.classifications.set(key, {
                 category: null,
@@ -394,8 +488,13 @@
     const applyTransaction = async (key) => {
         const item = state.items.find(entry => getItemKey(entry) === key);
         const classification = state.classifications.get(key);
+        const selections = state.selections.get(key) || {category: '', budget: ''};
 
-        if (!item || !classification || !classification.canUpdate || state.pendingUpdates.has(key)) {
+        if (!item || state.pendingUpdates.has(key)) {
+            return;
+        }
+
+        if ((!item.category && !selections.category) && (!item.budget && !selections.budget)) {
             return;
         }
 
@@ -408,7 +507,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({transaction: item, classification})
+                body: JSON.stringify({transaction: item, classification, selections})
             });
             const result = await response.json();
 
@@ -461,6 +560,25 @@
         }
     });
 
+    transactionsMount.addEventListener('change', (event) => {
+        const select = event.target.closest('[data-selection]');
+        if (!select) {
+            return;
+        }
+
+        const key = select.getAttribute('data-key');
+        const field = select.getAttribute('data-selection');
+        const item = state.items.find(entry => getItemKey(entry) === key);
+
+        if (!key || !field || !item) {
+            return;
+        }
+
+        const selections = ensureSelections(item);
+        selections[field] = select.value;
+        renderTransactions();
+    });
+
     prevPageButton.addEventListener('click', async () => {
         if (state.page > 1) {
             state.page -= 1;
@@ -483,7 +601,7 @@
         await loadTransactions();
     });
 
-    loadTransactions().catch(error => {
+    Promise.all([loadOptions(), loadTransactions()]).catch(error => {
         setSummaryError(error.message);
     });
 </script>

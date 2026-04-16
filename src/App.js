@@ -65,6 +65,7 @@ export default class App {
         }
 
         this.#express.get('/api/diagnostics', this.#onDiagnostics.bind(this))
+        this.#express.get('/api/transactions/options', this.#onGetTransactionOptions.bind(this))
         this.#express.get('/api/transactions/uncategorized', this.#onGetUncategorizedTransactions.bind(this))
         this.#express.post('/api/transactions/classify', this.#onClassifyTransaction.bind(this))
         this.#express.post('/api/transactions/apply', this.#onApplyTransactionUpdate.bind(this))
@@ -190,6 +191,26 @@ export default class App {
         }
     }
 
+    async #onGetTransactionOptions(req, res) {
+        try {
+            const firefly = this.#getFireflyService();
+            const categories = Array.from((await firefly.getCategories()).keys()).sort((left, right) => left.localeCompare(right));
+            const budgets = Array.from((await firefly.getBudgets()).keys()).sort((left, right) => left.localeCompare(right));
+
+            res.status(200).json({
+                ok: true,
+                categories,
+                budgets,
+            });
+        } catch (error) {
+            console.error('Could not load transaction options:', error);
+            res.status(500).json({
+                ok: false,
+                error: error.message,
+            });
+        }
+    }
+
     async #onClassifyTransaction(req, res) {
         try {
             const transaction = req.body?.transaction;
@@ -221,9 +242,10 @@ export default class App {
         try {
             const transaction = req.body?.transaction;
             const classification = req.body?.classification;
+            const selections = req.body?.selections ?? {};
 
-            if (!transaction || !classification) {
-                throw new WebhookException("Missing transaction or classification payload.");
+            if (!transaction) {
+                throw new WebhookException("Missing transaction payload.");
             }
 
             if (!transaction.transactionId || !Array.isArray(transaction.transactions) || transaction.transactions.length === 0) {
@@ -235,11 +257,13 @@ export default class App {
             const budgets = await firefly.getBudgets();
             const currentCategory = transaction.category ?? null;
             const currentBudget = transaction.budget ?? null;
-            const categoryId = currentCategory === null && categories.has(classification.category)
-                ? categories.get(classification.category)
+            const selectedCategory = currentCategory ?? selections.category ?? classification?.category ?? null;
+            const selectedBudget = currentBudget ?? selections.budget ?? classification?.budget ?? null;
+            const categoryId = currentCategory === null && selectedCategory && categories.has(selectedCategory)
+                ? categories.get(selectedCategory)
                 : -1;
-            const budgetId = currentBudget === null && budgets.has(classification.budget)
-                ? budgets.get(classification.budget)
+            const budgetId = currentBudget === null && selectedBudget && budgets.has(selectedBudget)
+                ? budgets.get(selectedBudget)
                 : -1;
 
             if (categoryId === -1 && budgetId === -1) {
@@ -250,8 +274,8 @@ export default class App {
 
             const updatedTransaction = {
                 ...transaction,
-                category: currentCategory ?? classification.category ?? null,
-                budget: currentBudget ?? classification.budget ?? null,
+                category: currentCategory ?? selectedCategory ?? null,
+                budget: currentBudget ?? selectedBudget ?? null,
             };
 
             res.status(200).json({
