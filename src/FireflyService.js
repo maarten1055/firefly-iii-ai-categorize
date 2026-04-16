@@ -1,6 +1,7 @@
 import {getConfigVariable} from "./util.js";
 
 const UNCATEGORIZED_CACHE_TTL_MS = 5 * 60 * 1000;
+const UNCATEGORIZED_SEARCH_QUERY = "has_any_budget:false || has_any_category:false && type:withdrawal";
 
 export default class FireflyService {
     #BASE_URL;
@@ -237,7 +238,7 @@ export default class FireflyService {
         this.#uncategorizedCache = {
             createdAt: Date.now(),
             items: [],
-            nextApiPage: 1,
+            nextSearchPage: 1,
             finished: false,
         };
     }
@@ -277,12 +278,12 @@ export default class FireflyService {
         const cache = this.#uncategorizedCache;
 
         const params = new URLSearchParams({
-            page: String(cache.nextApiPage),
-            limit: "100",
-            type: "withdrawal"
+            query: UNCATEGORIZED_SEARCH_QUERY,
+            page: String(cache.nextSearchPage),
+            limit: "100"
         });
 
-        const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/transactions?${params.toString()}`);
+        const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/search/transactions?${params.toString()}`);
         const data = await response.json();
         const groups = data.data ?? [];
 
@@ -298,7 +299,7 @@ export default class FireflyService {
                     continue;
                 }
 
-                if (transaction.category_name !== null && transaction.budget_name !== null) {
+                if (transaction.category_name !== null) {
                     continue;
                 }
 
@@ -319,12 +320,12 @@ export default class FireflyService {
             }
         }
 
-        if (groups.length === 0 || !data.meta?.pagination || cache.nextApiPage >= data.meta.pagination.total_pages) {
+        if (groups.length === 0 || !data.meta?.pagination || cache.nextSearchPage >= data.meta.pagination.total_pages) {
             cache.finished = true;
             return;
         }
 
-        cache.nextApiPage += 1;
+        cache.nextSearchPage += 1;
     }
 
     #invalidateUncategorizedCache() {
