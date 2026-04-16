@@ -66,6 +66,57 @@
             margin-bottom: 16px;
         }
 
+        .overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            border: solid 1px #d1d5db;
+            border-radius: 8px;
+            padding: 14px 16px;
+            background: #f9fafb;
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: 1.5rem;
+            margin-top: 4px;
+            color: #111827;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .filter-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .filter-grid select {
+            border: solid 1px #d1d5db;
+            border-radius: 6px;
+            padding: 8px 10px;
+            background: #fff;
+            color: #111827;
+        }
+
+        .bulk-panel {
+            border: solid 1px #d1d5db;
+            border-radius: 8px;
+            padding: 16px;
+            background: #f9fafb;
+            margin-bottom: 20px;
+        }
+
         .summary {
             color: #4b5563;
             margin-bottom: 20px;
@@ -231,6 +282,45 @@
         </select>
     </div>
 
+    <section class="overview" id="overview">
+        <article class="stat-card">
+            <div>Transactions in current view</div>
+            <strong id="stat-total-transactions">0</strong>
+        </article>
+        <article class="stat-card">
+            <div>Without category</div>
+            <strong id="stat-without-category">0</strong>
+        </article>
+        <article class="stat-card">
+            <div>Without budget</div>
+            <strong id="stat-without-budget">0</strong>
+        </article>
+    </section>
+
+    <div class="filter-grid">
+        <label>
+            Destination filter
+            <select id="destination-filter"></select>
+        </label>
+    </div>
+
+    <section class="bulk-panel">
+        <div class="summary" id="bulk-summary">Select a destination to update all empty values for that destination.</div>
+        <div class="selection-grid">
+            <label>
+                Bulk category
+                <select id="bulk-category"></select>
+            </label>
+            <label>
+                Bulk budget
+                <select id="bulk-budget"></select>
+            </label>
+        </div>
+        <div class="actions">
+            <button id="bulk-apply-button" class="button success" type="button" disabled>Apply to all filtered transactions</button>
+        </div>
+    </section>
+
     <div id="transactions" class="transactions"></div>
 
     <div class="pagination">
@@ -248,20 +338,40 @@
     const nextPageButton = document.getElementById('next-page');
     const refreshButton = document.getElementById('refresh-button');
     const pageSizeSelect = document.getElementById('page-size');
+    const destinationFilter = document.getElementById('destination-filter');
+    const bulkCategorySelect = document.getElementById('bulk-category');
+    const bulkBudgetSelect = document.getElementById('bulk-budget');
+    const bulkApplyButton = document.getElementById('bulk-apply-button');
+    const bulkSummary = document.getElementById('bulk-summary');
+    const statTotalTransactions = document.getElementById('stat-total-transactions');
+    const statWithoutCategory = document.getElementById('stat-without-category');
+    const statWithoutBudget = document.getElementById('stat-without-budget');
 
     const state = {
         page: 1,
         limit: Number(pageSizeSelect.value),
         hasNextPage: false,
         items: [],
+        destinationFilter: '',
+        destinations: [],
+        summary: {
+            totalTransactions: 0,
+            withoutCategory: 0,
+            withoutBudget: 0,
+        },
         options: {
             categories: [],
             budgets: [],
+        },
+        bulkSelections: {
+            category: '',
+            budget: '',
         },
         classifications: new Map(),
         selections: new Map(),
         pendingClassifications: new Set(),
         pendingUpdates: new Set(),
+        bulkUpdatePending: false,
     };
 
     const getValueOr = (value, fallback) => value === null || value === undefined ? fallback : value;
@@ -333,7 +443,35 @@
             .join('');
     };
 
+    const renderOverview = () => {
+        statTotalTransactions.textContent = String(getValueOr(state.summary.totalTransactions, 0));
+        statWithoutCategory.textContent = String(getValueOr(state.summary.withoutCategory, 0));
+        statWithoutBudget.textContent = String(getValueOr(state.summary.withoutBudget, 0));
+    };
+
+    const renderDestinationFilter = () => {
+        destinationFilter.innerHTML = buildOptionsMarkup(state.destinations, state.destinationFilter, 'All destinations');
+    };
+
+    const renderBulkPanel = () => {
+        const hasDestinationFilter = Boolean(state.destinationFilter);
+        const canApplyBulk = hasDestinationFilter && !state.bulkUpdatePending && Boolean(state.bulkSelections.category || state.bulkSelections.budget);
+
+        bulkCategorySelect.innerHTML = buildOptionsMarkup(state.options.categories, state.bulkSelections.category, 'Leave category unchanged');
+        bulkBudgetSelect.innerHTML = buildOptionsMarkup(state.options.budgets, state.bulkSelections.budget, 'Leave budget unchanged');
+        bulkCategorySelect.disabled = !hasDestinationFilter || state.bulkUpdatePending;
+        bulkBudgetSelect.disabled = !hasDestinationFilter || state.bulkUpdatePending;
+        bulkApplyButton.disabled = !canApplyBulk;
+        bulkApplyButton.textContent = state.bulkUpdatePending ? 'Updating destination...' : 'Apply to all filtered transactions';
+        bulkSummary.textContent = hasDestinationFilter
+            ? `Filtered on destination "${state.destinationFilter}". Bulk update only fills empty category or budget values for these transactions.`
+            : 'Select a destination to update all empty values for that destination.';
+    };
+
     const renderTransactions = () => {
+        renderOverview();
+        renderDestinationFilter();
+        renderBulkPanel();
         pageIndicator.textContent = `Page ${state.page}`;
         prevPageButton.disabled = state.page <= 1;
         nextPageButton.disabled = !state.hasNextPage;
@@ -416,7 +554,16 @@
         nextPageButton.disabled = true;
 
         try {
-            const response = await fetch(`/api/transactions/uncategorized?page=${encodeURIComponent(state.page)}&limit=${encodeURIComponent(state.limit)}`);
+            const params = new URLSearchParams({
+                page: String(state.page),
+                limit: String(state.limit),
+            });
+
+            if (state.destinationFilter) {
+                params.set('destination', state.destinationFilter);
+            }
+
+            const response = await fetch(`/api/transactions/uncategorized?${params.toString()}`);
             const result = await response.json();
 
             if (!response.ok) {
@@ -425,10 +572,14 @@
 
             state.items = Array.isArray(result.items) ? result.items : [];
             state.hasNextPage = Boolean(result.hasNextPage);
+            state.destinations = Array.isArray(result.destinations) ? result.destinations : [];
+            state.summary = result.summary || {totalTransactions: 0, withoutCategory: 0, withoutBudget: 0};
             state.classifications.clear();
             state.selections.clear();
 
-            summary.textContent = `Showing up to ${state.limit} transactions on page ${state.page}.`;
+            summary.textContent = state.destinationFilter
+                ? `Showing up to ${state.limit} transactions on page ${state.page} for destination "${state.destinationFilter}".`
+                : `Showing up to ${state.limit} transactions on page ${state.page}.`;
             renderTransactions();
         } catch (error) {
             state.items = [];
@@ -516,6 +667,17 @@
             }
 
             summary.textContent = `Transaction ${item.transactionJournalId} was updated in Firefly III.`;
+            state.pendingUpdates.delete(key);
+            state.classifications.delete(key);
+            state.selections.delete(key);
+
+            if (result.status === 'ready') {
+                state.items = state.items.filter(entry => getItemKey(entry) !== key);
+            } else if (result.transaction) {
+                state.items = state.items.map(entry => getItemKey(entry) === key ? result.transaction : entry);
+            }
+
+            renderTransactions();
             await loadTransactions();
         } catch (error) {
             state.classifications.set(key, {
@@ -577,6 +739,58 @@
         const selections = ensureSelections(item);
         selections[field] = select.value;
         renderTransactions();
+    });
+
+    destinationFilter.addEventListener('change', async () => {
+        state.destinationFilter = destinationFilter.value;
+        state.page = 1;
+        state.bulkSelections = {category: '', budget: ''};
+        await loadTransactions();
+    });
+
+    bulkCategorySelect.addEventListener('change', () => {
+        state.bulkSelections.category = bulkCategorySelect.value;
+        renderBulkPanel();
+    });
+
+    bulkBudgetSelect.addEventListener('change', () => {
+        state.bulkSelections.budget = bulkBudgetSelect.value;
+        renderBulkPanel();
+    });
+
+    bulkApplyButton.addEventListener('click', async () => {
+        if (!state.destinationFilter || state.bulkUpdatePending || (!state.bulkSelections.category && !state.bulkSelections.budget)) {
+            return;
+        }
+
+        state.bulkUpdatePending = true;
+        renderBulkPanel();
+
+        try {
+            const response = await fetch('/api/transactions/apply-destination', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    destination: state.destinationFilter,
+                    selections: state.bulkSelections,
+                })
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Could not update the filtered destination.');
+            }
+
+            summary.textContent = `${result.updatedCount} transaction(s) updated for destination "${state.destinationFilter}".`;
+            await loadTransactions();
+        } catch (error) {
+            setSummaryError(error.message);
+        } finally {
+            state.bulkUpdatePending = false;
+            renderBulkPanel();
+        }
     });
 
     prevPageButton.addEventListener('click', async () => {

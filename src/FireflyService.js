@@ -1,8 +1,12 @@
 import {getConfigVariable} from "./util.js";
 
+const UNCATEGORIZED_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export default class FireflyService {
     #BASE_URL;
     #PERSONAL_TOKEN;
+    #uncategorizedCache = null;
+    #uncategorizedScanPromise = null;
 
     constructor() {
         this.#BASE_URL = getConfigVariable("FIREFLY_URL")
@@ -46,79 +50,51 @@ export default class FireflyService {
         return bills;
     }
 
-    async getUncategorizedTransactions(page = 1, limit = 20) {
+    async getUncategorizedTransactions(page = 1, limit = 20, destinationName = null) {
         const normalizedPage = Math.max(1, Number.parseInt(page, 10) || 1);
         const normalizedLimit = Math.max(1, Math.min(Number.parseInt(limit, 10) || 20, 100));
+        const normalizedDestination = destinationName ? String(destinationName).trim() : null;
+
+        this.#ensureUncategorizedCacheFresh();
+        await this.#ensureUncategorizedCacheComplete();
+
+        const allItems = this.#uncategorizedCache.items;
+        const filteredItems = normalizedDestination
+            ? allItems.filter(item => item.destinationName === normalizedDestination)
+            : allItems;
         const startIndex = (normalizedPage - 1) * normalizedLimit;
-        const collected = [];
-        let matchesSeen = 0;
-        let apiPage = 1;
+        const items = filteredItems.slice(startIndex, startIndex + normalizedLimit + 1);
+        const destinations = Array.from(new Set(allItems.map(item => item.destinationName).filter(Boolean)))
+            .sort((left, right) => left.localeCompare(right));
 
-        while (collected.length < normalizedLimit + 1) {
-            const params = new URLSearchParams({
-                page: String(apiPage),
-                limit: "100",
-                type: "withdrawal"
-            });
-
-            const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/transactions?${params.toString()}`);
-            const data = await response.json();
-            const groups = data.data ?? [];
-
-            for (const group of groups) {
-                const transactions = group.attributes?.transactions ?? [];
-
-                for (const transaction of transactions) {
-                    if (transaction.type !== "withdrawal") {
-                        continue;
-                    }
-
-                    if (transaction.category_name !== null && transaction.budget_name !== null) {
-                        continue;
-                    }
-
-                    if (matchesSeen++ < startIndex) {
-                        continue;
-                    }
-
-                    collected.push({
-                        transactionId: group.id,
-                        transactionJournalId: transaction.transaction_journal_id,
-                        date: transaction.date,
-                        description: transaction.description,
-                        destinationName: transaction.destination_name,
-                        sourceName: transaction.source_name,
-                        amount: transaction.amount,
-                        currencyCode: transaction.currency_code,
-                        category: transaction.category_name,
-                        budget: transaction.budget_name,
-                        tags: transaction.tags ?? [],
-                        transactions,
-                    });
-
-                    if (collected.length >= normalizedLimit + 1) {
-                        break;
-                    }
-                }
-
-                if (collected.length >= normalizedLimit + 1) {
-                    break;
-                }
-            }
-
-            if (groups.length === 0 || !data.meta?.pagination || apiPage >= data.meta.pagination.total_pages || collected.length >= normalizedLimit + 1) {
-                break;
-            }
-
-            apiPage += 1;
-        }
+        const summary = {
+            totalTransactions: filteredItems.length,
+            withoutCategory: filteredItems.filter(item => !item.category).length,
+            withoutBudget: filteredItems.filter(item => !item.budget).length,
+            destinationName: normalizedDestination,
+        };
 
         return {
             page: normalizedPage,
             limit: normalizedLimit,
-            hasNextPage: collected.length > normalizedLimit,
-            items: collected.slice(0, normalizedLimit),
+            hasNextPage: items.length > normalizedLimit,
+            items: items.slice(0, normalizedLimit),
+            destinations,
+            summary,
         };
+    }
+
+    async getUncategorizedTransactionsForDestination(destinationName) {
+        const normalizedDestination = destinationName ? String(destinationName).trim() : null;
+
+        if (!normalizedDestination) {
+            return [];
+        }
+
+        this.#ensureUncategorizedCacheFresh();
+        await this.#ensureUncategorizedCacheComplete();
+
+        return this.#uncategorizedCache.items.filter(item => item.destinationName === normalizedDestination);
     }
 
     async getRecentTransactionsForDestination(destinationName, limit = 5, excludeJournalId = null) {
@@ -191,7 +167,104 @@ export default class FireflyService {
         });
 
         await response.json();
+        this.#invalidateUncategorizedCache();
         console.info("Transaction updated")
+    }
+
+    #ensureUncategorizedCacheFresh() {
+        if (this.#uncategorizedCache && Date.now() - this.#uncategorizedCache.createdAt < UNCATEGORIZED_CACHE_TTL_MS) {
+            return;
+        }
+
+        this.#uncategorizedCache = {
+            createdAt: Date.now(),
+            items: [],
+            nextApiPage: 1,
+            finished: false,
+        };
+    }
+
+    async #ensureUncategorizedCacheCount(requiredCount) {
+        while (!this.#uncategorizedCache.finished && this.#uncategorizedCache.items.length < requiredCount) {
+            if (this.#uncategorizedScanPromise) {
+                await this.#uncategorizedScanPromise;
+                continue;
+            }
+
+            this.#uncategorizedScanPromise = this.#scanNextUncategorizedPage();
+
+            try {
+                await this.#uncategorizedScanPromise;
+            } finally {
+                this.#uncategorizedScanPromise = null;
+            }
+        }
+    }
+
+    async #ensureUncategorizedCacheComplete() {
+        await this.#ensureUncategorizedCacheCount(Number.MAX_SAFE_INTEGER);
+    }
+
+    async #scanNextUncategorizedPage() {
+        if (!this.#uncategorizedCache || this.#uncategorizedCache.finished) {
+            return;
+        }
+
+        const cache = this.#uncategorizedCache;
+
+        const params = new URLSearchParams({
+            page: String(cache.nextApiPage),
+            limit: "100",
+            type: "withdrawal"
+        });
+
+        const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/transactions?${params.toString()}`);
+        const data = await response.json();
+        const groups = data.data ?? [];
+
+        if (this.#uncategorizedCache !== cache) {
+            return;
+        }
+
+        for (const group of groups) {
+            const transactions = group.attributes?.transactions ?? [];
+
+            for (const transaction of transactions) {
+                if (transaction.type !== "withdrawal") {
+                    continue;
+                }
+
+                if (transaction.category_name !== null && transaction.budget_name !== null) {
+                    continue;
+                }
+
+                cache.items.push({
+                    transactionId: group.id,
+                    transactionJournalId: transaction.transaction_journal_id,
+                    date: transaction.date,
+                    description: transaction.description,
+                    destinationName: transaction.destination_name,
+                    sourceName: transaction.source_name,
+                    amount: transaction.amount,
+                    currencyCode: transaction.currency_code,
+                    category: transaction.category_name,
+                    budget: transaction.budget_name,
+                    tags: transaction.tags ?? [],
+                    transactions,
+                });
+            }
+        }
+
+        if (groups.length === 0 || !data.meta?.pagination || cache.nextApiPage >= data.meta.pagination.total_pages) {
+            cache.finished = true;
+            return;
+        }
+
+        cache.nextApiPage += 1;
+    }
+
+    #invalidateUncategorizedCache() {
+        this.#uncategorizedCache = null;
     }
 
     async diagnose() {

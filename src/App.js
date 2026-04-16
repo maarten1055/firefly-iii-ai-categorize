@@ -69,6 +69,7 @@ export default class App {
         this.#express.get('/api/transactions/uncategorized', this.#onGetUncategorizedTransactions.bind(this))
         this.#express.post('/api/transactions/classify', this.#onClassifyTransaction.bind(this))
         this.#express.post('/api/transactions/apply', this.#onApplyTransactionUpdate.bind(this))
+        this.#express.post('/api/transactions/apply-destination', this.#onApplyDestinationUpdate.bind(this))
         this.#express.post('/api/jobs/:id/fill-missing', this.#onFillMissingJobValue.bind(this))
         this.#express.post('/webhook', this.#onWebhook.bind(this))
 
@@ -176,7 +177,8 @@ export default class App {
         try {
             const page = Math.max(1, Number.parseInt(req.query?.page, 10) || 1);
             const limit = Math.max(1, Math.min(Number.parseInt(req.query?.limit, 10) || 20, 100));
-            const result = await this.#getFireflyService().getUncategorizedTransactions(page, limit);
+            const destination = req.query?.destination ? String(req.query.destination).trim() : null;
+            const result = await this.#getFireflyService().getUncategorizedTransactions(page, limit, destination);
 
             res.status(200).json({
                 ok: true,
@@ -185,6 +187,55 @@ export default class App {
         } catch (error) {
             console.error('Could not load uncategorized transactions:', error);
             res.status(500).json({
+                ok: false,
+                error: error.message,
+            });
+        }
+    }
+
+    async #onApplyDestinationUpdate(req, res) {
+        try {
+            const destination = req.body?.destination ? String(req.body.destination).trim() : null;
+            const selections = req.body?.selections ?? {};
+
+            if (!destination) {
+                throw new WebhookException("Missing destination.");
+            }
+
+            if (!selections.category && !selections.budget) {
+                throw new WebhookException("Select at least one category or budget value.");
+            }
+
+            const firefly = this.#getFireflyService();
+            const categories = await firefly.getCategories();
+            const budgets = await firefly.getBudgets();
+            const transactions = await firefly.getUncategorizedTransactionsForDestination(destination);
+            let updatedCount = 0;
+
+            for (const transaction of transactions) {
+                const categoryId = !transaction.category && selections.category && categories.has(selections.category)
+                    ? categories.get(selections.category)
+                    : -1;
+                const budgetId = !transaction.budget && selections.budget && budgets.has(selections.budget)
+                    ? budgets.get(selections.budget)
+                    : -1;
+
+                if (categoryId === -1 && budgetId === -1) {
+                    continue;
+                }
+
+                await firefly.setCategoryAndBudget(transaction.transactionId, transaction.transactions, categoryId, budgetId);
+                updatedCount += 1;
+            }
+
+            res.status(200).json({
+                ok: true,
+                updatedCount,
+                destination,
+            });
+        } catch (error) {
+            console.error('Could not apply destination update:', error);
+            res.status(error instanceof WebhookException ? 400 : 500).json({
                 ok: false,
                 error: error.message,
             });
