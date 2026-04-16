@@ -232,14 +232,24 @@
         pendingUpdates: new Set(),
     };
 
-    const escapeHtml = (value) => String(value ?? '')
+    const getValueOr = (value, fallback) => value === null || value === undefined ? fallback : value;
+
+    const setSummaryError = (message) => {
+        summary.textContent = `Could not load transactions: ${message}`;
+        transactionsMount.innerHTML = `<div class="message-box error">${escapeHtml(message)}</div>`;
+        pageIndicator.textContent = `Page ${state.page}`;
+        prevPageButton.disabled = state.page <= 1;
+        nextPageButton.disabled = true;
+    };
+
+    const escapeHtml = (value) => String(getValueOr(value, ''))
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 
-    const getItemKey = (item) => String(item.transactionJournalId ?? item.transactionId ?? item.id);
+    const getItemKey = (item) => String(getValueOr(item.transactionJournalId, getValueOr(item.transactionId, item.id)));
 
     const getMissingLabel = (item) => {
         const hasCategory = Boolean(item.category);
@@ -257,7 +267,9 @@
     };
 
     const getSuggestionStatusLabel = (classification) => {
-        switch (classification?.status) {
+        const status = classification ? classification.status : null;
+
+        switch (status) {
             case 'ready':
                 return 'Ready to update';
             case 'partial':
@@ -284,7 +296,7 @@
             const classification = state.classifications.get(key);
             const classifyBusy = state.pendingClassifications.has(key);
             const updateBusy = state.pendingUpdates.has(key);
-            const canApply = Boolean(classification?.canUpdate) && !updateBusy;
+            const canApply = Boolean(classification && classification.canUpdate) && !updateBusy;
 
             return `<article class="transaction ${escapeHtml(missing.className)}">
                 <div class="row"><strong>Date:</strong> <span>${escapeHtml(item.date || '')}</span></div>
@@ -306,10 +318,10 @@
                     <div><strong>Suggested budget:</strong> <span>${classification.budget ? escapeHtml(classification.budget) : '<em>None</em>'}</span></div>
                     <div class="badges" style="margin-top: 8px;">
                         <span class="badge ${escapeHtml(classification.status === 'ready' ? 'ready' : classification.status === 'partial' ? 'partial' : 'missing')}">${escapeHtml(getSuggestionStatusLabel(classification))}</span>
-                        <span class="badge">History: ${escapeHtml(classification.historyCount ?? 0)}</span>
+                        <span class="badge">History: ${escapeHtml(getValueOr(classification.historyCount, 0))}</span>
                     </div>
                 </div>` : '<div class="muted" style="margin-top: 12px;">No suggestion loaded yet.</div>'}
-                ${classification?.error ? `<div class="message-box error">${escapeHtml(classification.error)}</div>` : ''}
+                ${classification && classification.error ? `<div class="message-box error">${escapeHtml(classification.error)}</div>` : ''}
             </article>`;
         }).join('');
     };
@@ -327,7 +339,7 @@
                 throw new Error(result.error || 'Could not load uncategorized transactions.');
             }
 
-            state.items = result.items ?? [];
+            state.items = Array.isArray(result.items) ? result.items : [];
             state.hasNextPage = Boolean(result.hasNextPage);
             state.classifications.clear();
 
@@ -336,9 +348,7 @@
         } catch (error) {
             state.items = [];
             state.hasNextPage = false;
-            summary.textContent = `Could not load transactions: ${error.message}`;
-            transactionsMount.innerHTML = `<div class="message-box error">${escapeHtml(error.message)}</div>`;
-            pageIndicator.textContent = `Page ${state.page}`;
+            setSummaryError(error.message);
         }
     };
 
@@ -410,7 +420,7 @@
             await loadTransactions();
         } catch (error) {
             state.classifications.set(key, {
-                ...(classification ?? {}),
+                ...(classification || {}),
                 error: error.message,
             });
             renderTransactions();
@@ -419,6 +429,18 @@
             renderTransactions();
         }
     };
+
+    window.addEventListener('error', (event) => {
+        if (event && event.message) {
+            setSummaryError(event.message);
+        }
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        const reason = event ? event.reason : null;
+        const message = reason && reason.message ? reason.message : String(getValueOr(reason, 'Unknown browser error'));
+        setSummaryError(message);
+    });
 
     transactionsMount.addEventListener('click', async (event) => {
         const button = event.target.closest('[data-action]');
@@ -461,7 +483,9 @@
         await loadTransactions();
     });
 
-    loadTransactions();
+    loadTransactions().catch(error => {
+        setSummaryError(error.message);
+    });
 </script>
 </body>
 
