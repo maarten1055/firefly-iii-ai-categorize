@@ -392,17 +392,26 @@
         pendingUpdates: new Set(),
         bulkUpdatePending: false,
         metadataLoaded: false,
+        metadataRefreshHandle: null,
     };
 
     const getValueOr = (value, fallback) => value === null || value === undefined ? fallback : value;
 
     const setSummaryError = (message) => {
+        clearMetadataRefresh();
         summary.textContent = `Could not load transactions: ${message}`;
         transactionsMount.innerHTML = `<div class="message-box error">${escapeHtml(message)}</div>`;
         pageIndicator.textContent = `Page ${state.page}`;
         pageList.innerHTML = '';
         prevPageButton.disabled = state.page <= 1;
         nextPageButton.disabled = true;
+    };
+
+    const clearMetadataRefresh = () => {
+        if (state.metadataRefreshHandle) {
+            window.clearTimeout(state.metadataRefreshHandle);
+            state.metadataRefreshHandle = null;
+        }
     };
 
     const escapeHtml = (value) => String(getValueOr(value, ''))
@@ -585,6 +594,8 @@
     };
 
     const loadMetadata = async () => {
+        clearMetadataRefresh();
+
         const params = new URLSearchParams();
 
         if (state.destinationFilter) {
@@ -600,11 +611,27 @@
 
         state.destinations = Array.isArray(result.destinations) ? result.destinations : [];
         state.summary = result.summary || {totalTransactions: 0, withoutCategory: 0, withoutBudget: 0};
-        state.totalPages = Math.max(1, Math.ceil(getValueOr(state.summary.totalTransactions, 0) / state.limit));
-        state.metadataLoaded = true;
+        state.metadataLoaded = Boolean(result.complete);
 
-        if (state.page > state.totalPages) {
-            state.page = state.totalPages;
+        if (state.metadataLoaded) {
+            state.totalPages = Math.max(1, Math.ceil(getValueOr(state.summary.totalTransactions, 0) / state.limit));
+
+            if (state.page > state.totalPages) {
+                state.page = state.totalPages;
+            }
+        }
+
+        renderOverview();
+        renderDestinationFilter();
+        renderBulkPanel();
+        renderPagination();
+
+        if (!state.metadataLoaded) {
+            state.metadataRefreshHandle = window.setTimeout(() => {
+                loadMetadata().catch(error => {
+                    setSummaryError(error.message);
+                });
+            }, 1000);
         }
     };
 
@@ -804,6 +831,7 @@
         state.page = 1;
         state.metadataLoaded = false;
         state.bulkSelections = {category: '', budget: ''};
+        clearMetadataRefresh();
         await Promise.all([loadMetadata(), loadTransactions()]);
     });
 
@@ -881,12 +909,17 @@
         await loadTransactions();
     });
 
-    refreshButton.addEventListener('click', loadTransactions);
+    refreshButton.addEventListener('click', async () => {
+        state.metadataLoaded = false;
+        clearMetadataRefresh();
+        await Promise.all([loadMetadata(), loadTransactions()]);
+    });
 
     pageSizeSelect.addEventListener('change', async () => {
         state.limit = Number(pageSizeSelect.value);
         state.page = 1;
         state.metadataLoaded = false;
+        clearMetadataRefresh();
         await Promise.all([loadMetadata(), loadTransactions()]);
     });
 

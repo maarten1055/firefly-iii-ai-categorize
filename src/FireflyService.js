@@ -1,13 +1,23 @@
 import {getConfigVariable} from "./util.js";
 
 const UNCATEGORIZED_CACHE_TTL_MS = 5 * 60 * 1000;
-const UNCATEGORIZED_SEARCH_QUERY = "has_any_budget:false || has_any_category:false && type:withdrawal";
+const UNCATEGORIZED_SEARCH_SOURCES = [
+    {
+        id: "missing-category",
+        query: "has_any_category:false && type:withdrawal",
+    },
+    {
+        id: "missing-budget",
+        query: "has_any_budget:false && type:withdrawal",
+    }
+];
 
 export default class FireflyService {
     #BASE_URL;
     #PERSONAL_TOKEN;
     #uncategorizedCache = null;
     #uncategorizedScanPromise = null;
+    #uncategorizedBackgroundScanPromise = null;
 
     constructor() {
         this.#BASE_URL = getConfigVariable("FIREFLY_URL")
@@ -91,11 +101,13 @@ export default class FireflyService {
 
     async getUncategorizedMetadata(destinationName = null) {
         this.#ensureUncategorizedCacheFresh();
-        await this.#ensureUncategorizedCacheComplete();
+        await this.#ensureUncategorizedCacheCount(1);
+        this.#startUncategorizedBackgroundScan();
 
         if (!this.#uncategorizedCache) {
             this.#ensureUncategorizedCacheFresh();
-            await this.#ensureUncategorizedCacheComplete();
+            await this.#ensureUncategorizedCacheCount(1);
+            this.#startUncategorizedBackgroundScan();
         }
 
         const normalizedDestination = destinationName ? String(destinationName).trim() : null;
@@ -135,6 +147,7 @@ export default class FireflyService {
                 destinationName: normalizedDestination,
             },
             destinations: Array.from(destinationSummaries.keys()).sort((left, right) => left.localeCompare(right)),
+            complete: Boolean(this.#uncategorizedCache?.finished),
         };
     }
 
@@ -238,9 +251,31 @@ export default class FireflyService {
         this.#uncategorizedCache = {
             createdAt: Date.now(),
             items: [],
-            nextSearchPage: 1,
+            itemsByJournalId: new Map(),
+            sources: UNCATEGORIZED_SEARCH_SOURCES.map(source => ({
+                ...source,
+                nextPage: 1,
+                finished: false,
+            })),
+            nextSourceIndex: 0,
             finished: false,
         };
+    }
+
+    #startUncategorizedBackgroundScan() {
+        if (!this.#uncategorizedCache || this.#uncategorizedCache.finished || this.#uncategorizedBackgroundScanPromise) {
+            return;
+        }
+
+        this.#uncategorizedBackgroundScanPromise = (async () => {
+            try {
+                await this.#ensureUncategorizedCacheComplete();
+            } catch (error) {
+                console.error("Could not complete uncategorized metadata scan:", error);
+            } finally {
+                this.#uncategorizedBackgroundScanPromise = null;
+            }
+        })();
     }
 
     async #ensureUncategorizedCacheCount(requiredCount) {
@@ -276,10 +311,16 @@ export default class FireflyService {
         }
 
         const cache = this.#uncategorizedCache;
+        const source = this.#getNextUncategorizedSource(cache);
+
+        if (!source) {
+            cache.finished = true;
+            return;
+        }
 
         const params = new URLSearchParams({
-            query: UNCATEGORIZED_SEARCH_QUERY,
-            page: String(cache.nextSearchPage),
+            query: source.query,
+            page: String(source.nextPage),
             limit: "100"
         });
 
@@ -299,13 +340,28 @@ export default class FireflyService {
                     continue;
                 }
 
-                if (transaction.category_name !== null) {
+                if (source.id === "missing-category" && transaction.category_name !== null) {
                     continue;
                 }
 
-                cache.items.push({
+                if (source.id === "missing-budget" && transaction.budget_name !== null) {
+                    continue;
+                }
+
+                const transactionJournalId = String(transaction.transaction_journal_id);
+                const existingItem = cache.itemsByJournalId.get(transactionJournalId);
+
+                if (existingItem) {
+                    existingItem.category = existingItem.category ?? transaction.category_name;
+                    existingItem.budget = existingItem.budget ?? transaction.budget_name;
+                    existingItem.tags = Array.from(new Set([...(existingItem.tags ?? []), ...(transaction.tags ?? [])]));
+                    existingItem.transactions = transactions;
+                    continue;
+                }
+
+                const item = {
                     transactionId: group.id,
-                    transactionJournalId: transaction.transaction_journal_id,
+                    transactionJournalId,
                     date: transaction.date,
                     description: transaction.description,
                     destinationName: transaction.destination_name,
@@ -316,20 +372,55 @@ export default class FireflyService {
                     budget: transaction.budget_name,
                     tags: transaction.tags ?? [],
                     transactions,
-                });
+                };
+
+                cache.itemsByJournalId.set(transactionJournalId, item);
+                cache.items.push(item);
             }
         }
 
-        if (groups.length === 0 || !data.meta?.pagination || cache.nextSearchPage >= data.meta.pagination.total_pages) {
-            cache.finished = true;
-            return;
+        cache.items.sort((left, right) => {
+            const dateDifference = new Date(right.date).getTime() - new Date(left.date).getTime();
+
+            if (dateDifference !== 0) {
+                return dateDifference;
+            }
+
+            return Number(right.transactionJournalId) - Number(left.transactionJournalId);
+        });
+
+        if (groups.length === 0 || !data.meta?.pagination || source.nextPage >= data.meta.pagination.total_pages) {
+            source.finished = true;
+        } else {
+            source.nextPage += 1;
         }
 
-        cache.nextSearchPage += 1;
+        cache.finished = cache.sources.every(entry => entry.finished);
+    }
+
+    #getNextUncategorizedSource(cache) {
+        if (!cache?.sources?.length) {
+            return null;
+        }
+
+        for (let offset = 0; offset < cache.sources.length; offset += 1) {
+            const index = (cache.nextSourceIndex + offset) % cache.sources.length;
+            const source = cache.sources[index];
+
+            if (source.finished) {
+                continue;
+            }
+
+            cache.nextSourceIndex = (index + 1) % cache.sources.length;
+            return source;
+        }
+
+        return null;
     }
 
     #invalidateUncategorizedCache() {
         this.#uncategorizedCache = null;
+        this.#uncategorizedBackgroundScanPromise = null;
     }
 
     async diagnose() {
