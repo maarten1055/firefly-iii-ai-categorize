@@ -61,11 +61,21 @@ export default class FireflyService {
 
         if (normalizedDestination) {
             await this.#ensureUncategorizedCacheComplete();
-            filteredItems = this.#uncategorizedCache.items.filter(item => item.destinationName === normalizedDestination);
+            if (!this.#uncategorizedCache) {
+                this.#ensureUncategorizedCacheFresh();
+                await this.#ensureUncategorizedCacheComplete();
+            }
+
+            filteredItems = (this.#uncategorizedCache?.items ?? []).filter(item => item.destinationName === normalizedDestination);
         } else {
             const requiredCount = startIndex + normalizedLimit + 1;
             await this.#ensureUncategorizedCacheCount(requiredCount);
-            filteredItems = this.#uncategorizedCache.items;
+            if (!this.#uncategorizedCache) {
+                this.#ensureUncategorizedCacheFresh();
+                await this.#ensureUncategorizedCacheCount(requiredCount);
+            }
+
+            filteredItems = this.#uncategorizedCache?.items ?? [];
         }
 
         const items = filteredItems.slice(startIndex, startIndex + normalizedLimit + 1);
@@ -82,11 +92,16 @@ export default class FireflyService {
         this.#ensureUncategorizedCacheFresh();
         await this.#ensureUncategorizedCacheComplete();
 
+        if (!this.#uncategorizedCache) {
+            this.#ensureUncategorizedCacheFresh();
+            await this.#ensureUncategorizedCacheComplete();
+        }
+
         const normalizedDestination = destinationName ? String(destinationName).trim() : null;
 
         const destinationSummaries = new Map();
 
-        for (const item of this.#uncategorizedCache.items) {
+        for (const item of this.#uncategorizedCache?.items ?? []) {
             const destinationName = item.destinationName || 'Unknown';
 
             if (!destinationSummaries.has(destinationName)) {
@@ -108,8 +123,8 @@ export default class FireflyService {
         }
 
         const filteredItems = normalizedDestination
-            ? this.#uncategorizedCache.items.filter(item => item.destinationName === normalizedDestination)
-            : this.#uncategorizedCache.items;
+            ? (this.#uncategorizedCache?.items ?? []).filter(item => item.destinationName === normalizedDestination)
+            : (this.#uncategorizedCache?.items ?? []);
 
         return {
             summary: {
@@ -132,7 +147,12 @@ export default class FireflyService {
         this.#ensureUncategorizedCacheFresh();
         await this.#ensureUncategorizedCacheComplete();
 
-        return this.#uncategorizedCache.items.filter(item => item.destinationName === normalizedDestination);
+        if (!this.#uncategorizedCache) {
+            this.#ensureUncategorizedCacheFresh();
+            await this.#ensureUncategorizedCacheComplete();
+        }
+
+        return (this.#uncategorizedCache?.items ?? []).filter(item => item.destinationName === normalizedDestination);
     }
 
     async getRecentTransactionsForDestination(destinationName, limit = 5, excludeJournalId = null) {
@@ -223,7 +243,13 @@ export default class FireflyService {
     }
 
     async #ensureUncategorizedCacheCount(requiredCount) {
-        while (!this.#uncategorizedCache.finished && this.#uncategorizedCache.items.length < requiredCount) {
+        while (true) {
+            const cache = this.#uncategorizedCache;
+
+            if (!cache || cache.finished || cache.items.length >= requiredCount) {
+                return;
+            }
+
             if (this.#uncategorizedScanPromise) {
                 await this.#uncategorizedScanPromise;
                 continue;
