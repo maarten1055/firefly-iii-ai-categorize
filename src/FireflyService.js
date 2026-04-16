@@ -56,31 +56,69 @@ export default class FireflyService {
         const normalizedDestination = destinationName ? String(destinationName).trim() : null;
 
         this.#ensureUncategorizedCacheFresh();
-        await this.#ensureUncategorizedCacheComplete();
-
-        const allItems = this.#uncategorizedCache.items;
-        const filteredItems = normalizedDestination
-            ? allItems.filter(item => item.destinationName === normalizedDestination)
-            : allItems;
         const startIndex = (normalizedPage - 1) * normalizedLimit;
-        const items = filteredItems.slice(startIndex, startIndex + normalizedLimit + 1);
-        const destinations = Array.from(new Set(allItems.map(item => item.destinationName).filter(Boolean)))
-            .sort((left, right) => left.localeCompare(right));
+        let filteredItems;
 
-        const summary = {
-            totalTransactions: filteredItems.length,
-            withoutCategory: filteredItems.filter(item => !item.category).length,
-            withoutBudget: filteredItems.filter(item => !item.budget).length,
-            destinationName: normalizedDestination,
-        };
+        if (normalizedDestination) {
+            await this.#ensureUncategorizedCacheComplete();
+            filteredItems = this.#uncategorizedCache.items.filter(item => item.destinationName === normalizedDestination);
+        } else {
+            const requiredCount = startIndex + normalizedLimit + 1;
+            await this.#ensureUncategorizedCacheCount(requiredCount);
+            filteredItems = this.#uncategorizedCache.items;
+        }
+
+        const items = filteredItems.slice(startIndex, startIndex + normalizedLimit + 1);
 
         return {
             page: normalizedPage,
             limit: normalizedLimit,
             hasNextPage: items.length > normalizedLimit,
             items: items.slice(0, normalizedLimit),
-            destinations,
-            summary,
+        };
+    }
+
+    async getUncategorizedMetadata(destinationName = null) {
+        this.#ensureUncategorizedCacheFresh();
+        await this.#ensureUncategorizedCacheComplete();
+
+        const normalizedDestination = destinationName ? String(destinationName).trim() : null;
+
+        const destinationSummaries = new Map();
+
+        for (const item of this.#uncategorizedCache.items) {
+            const destinationName = item.destinationName || 'Unknown';
+
+            if (!destinationSummaries.has(destinationName)) {
+                destinationSummaries.set(destinationName, {
+                    totalTransactions: 0,
+                    withoutCategory: 0,
+                    withoutBudget: 0,
+                });
+            }
+
+            const destinationSummary = destinationSummaries.get(destinationName);
+            destinationSummary.totalTransactions += 1;
+            if (!item.category) {
+                destinationSummary.withoutCategory += 1;
+            }
+            if (!item.budget) {
+                destinationSummary.withoutBudget += 1;
+            }
+        }
+
+        const filteredItems = normalizedDestination
+            ? this.#uncategorizedCache.items.filter(item => item.destinationName === normalizedDestination)
+            : this.#uncategorizedCache.items;
+
+        return {
+            summary: {
+                totalTransactions: filteredItems.length,
+                withoutCategory: filteredItems.filter(item => !item.category).length,
+                withoutBudget: filteredItems.filter(item => !item.budget).length,
+                destinationName: normalizedDestination,
+            },
+            destinations: Array.from(destinationSummaries.keys()).sort((left, right) => left.localeCompare(right)),
         };
     }
 

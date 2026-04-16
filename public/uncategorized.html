@@ -248,6 +248,22 @@
             margin-top: 20px;
         }
 
+        .page-list {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .page-button {
+            min-width: 38px;
+            padding: 8px 10px;
+        }
+
+        .page-button.active {
+            background: #2563eb;
+        }
+
         .muted {
             color: #6b7280;
         }
@@ -325,6 +341,7 @@
 
     <div class="pagination">
         <button id="prev-page" class="button" type="button">Previous</button>
+        <div id="page-list" class="page-list"></div>
         <span id="page-indicator">Page 1</span>
         <button id="next-page" class="button" type="button">Next</button>
     </div>
@@ -334,6 +351,7 @@
     const summary = document.getElementById('summary');
     const transactionsMount = document.getElementById('transactions');
     const pageIndicator = document.getElementById('page-indicator');
+    const pageList = document.getElementById('page-list');
     const prevPageButton = document.getElementById('prev-page');
     const nextPageButton = document.getElementById('next-page');
     const refreshButton = document.getElementById('refresh-button');
@@ -351,6 +369,7 @@
         page: 1,
         limit: Number(pageSizeSelect.value),
         hasNextPage: false,
+        totalPages: 1,
         items: [],
         destinationFilter: '',
         destinations: [],
@@ -372,6 +391,7 @@
         pendingClassifications: new Set(),
         pendingUpdates: new Set(),
         bulkUpdatePending: false,
+        metadataLoaded: false,
     };
 
     const getValueOr = (value, fallback) => value === null || value === undefined ? fallback : value;
@@ -380,6 +400,7 @@
         summary.textContent = `Could not load transactions: ${message}`;
         transactionsMount.innerHTML = `<div class="message-box error">${escapeHtml(message)}</div>`;
         pageIndicator.textContent = `Page ${state.page}`;
+        pageList.innerHTML = '';
         prevPageButton.disabled = state.page <= 1;
         nextPageButton.disabled = true;
     };
@@ -468,13 +489,28 @@
             : 'Select a destination to update all empty values for that destination.';
     };
 
+    const renderPagination = () => {
+        pageIndicator.textContent = state.metadataLoaded
+            ? `Page ${state.page} of ${state.totalPages}`
+            : `Page ${state.page}`;
+        prevPageButton.disabled = state.page <= 1;
+        nextPageButton.disabled = state.metadataLoaded ? state.page >= state.totalPages : !state.hasNextPage;
+
+        if (!state.metadataLoaded || state.totalPages <= 1) {
+            pageList.innerHTML = '';
+            return;
+        }
+
+        pageList.innerHTML = Array.from({length: state.totalPages}, (_, index) => index + 1)
+            .map(page => `<button class="button page-button ${page === state.page ? 'active' : ''}" type="button" data-page-number="${page}">${page}</button>`)
+            .join('');
+    };
+
     const renderTransactions = () => {
         renderOverview();
         renderDestinationFilter();
         renderBulkPanel();
-        pageIndicator.textContent = `Page ${state.page}`;
-        prevPageButton.disabled = state.page <= 1;
-        nextPageButton.disabled = !state.hasNextPage;
+        renderPagination();
 
         if (state.items.length === 0) {
             transactionsMount.innerHTML = '<div class="message-box">No transactions without category or budget were found on this page.</div>';
@@ -548,6 +584,30 @@
         };
     };
 
+    const loadMetadata = async () => {
+        const params = new URLSearchParams();
+
+        if (state.destinationFilter) {
+            params.set('destination', state.destinationFilter);
+        }
+
+        const response = await fetch(`/api/transactions/metadata?${params.toString()}`);
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Could not load transaction metadata.');
+        }
+
+        state.destinations = Array.isArray(result.destinations) ? result.destinations : [];
+        state.summary = result.summary || {totalTransactions: 0, withoutCategory: 0, withoutBudget: 0};
+        state.totalPages = Math.max(1, Math.ceil(getValueOr(state.summary.totalTransactions, 0) / state.limit));
+        state.metadataLoaded = true;
+
+        if (state.page > state.totalPages) {
+            state.page = state.totalPages;
+        }
+    };
+
     const loadTransactions = async () => {
         summary.textContent = 'Loading transactions from Firefly III...';
         prevPageButton.disabled = true;
@@ -572,8 +632,6 @@
 
             state.items = Array.isArray(result.items) ? result.items : [];
             state.hasNextPage = Boolean(result.hasNextPage);
-            state.destinations = Array.isArray(result.destinations) ? result.destinations : [];
-            state.summary = result.summary || {totalTransactions: 0, withoutCategory: 0, withoutBudget: 0};
             state.classifications.clear();
             state.selections.clear();
 
@@ -744,8 +802,9 @@
     destinationFilter.addEventListener('change', async () => {
         state.destinationFilter = destinationFilter.value;
         state.page = 1;
+        state.metadataLoaded = false;
         state.bulkSelections = {category: '', budget: ''};
-        await loadTransactions();
+        await Promise.all([loadMetadata(), loadTransactions()]);
     });
 
     bulkCategorySelect.addEventListener('change', () => {
@@ -801,10 +860,25 @@
     });
 
     nextPageButton.addEventListener('click', async () => {
-        if (state.hasNextPage) {
+        if (state.metadataLoaded ? state.page < state.totalPages : state.hasNextPage) {
             state.page += 1;
             await loadTransactions();
         }
+    });
+
+    pageList.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-page-number]');
+        if (!button) {
+            return;
+        }
+
+        const targetPage = Number(button.getAttribute('data-page-number'));
+        if (!targetPage || targetPage === state.page) {
+            return;
+        }
+
+        state.page = targetPage;
+        await loadTransactions();
     });
 
     refreshButton.addEventListener('click', loadTransactions);
@@ -812,10 +886,11 @@
     pageSizeSelect.addEventListener('change', async () => {
         state.limit = Number(pageSizeSelect.value);
         state.page = 1;
-        await loadTransactions();
+        state.metadataLoaded = false;
+        await Promise.all([loadMetadata(), loadTransactions()]);
     });
 
-    Promise.all([loadOptions(), loadTransactions()]).catch(error => {
+    Promise.all([loadOptions(), loadMetadata(), loadTransactions()]).catch(error => {
         setSummaryError(error.message);
     });
 </script>

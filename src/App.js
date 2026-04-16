@@ -66,6 +66,7 @@ export default class App {
 
         this.#express.get('/api/diagnostics', this.#onDiagnostics.bind(this))
         this.#express.get('/api/transactions/options', this.#onGetTransactionOptions.bind(this))
+        this.#express.get('/api/transactions/metadata', this.#onGetUncategorizedMetadata.bind(this))
         this.#express.get('/api/transactions/uncategorized', this.#onGetUncategorizedTransactions.bind(this))
         this.#express.post('/api/transactions/classify', this.#onClassifyTransaction.bind(this))
         this.#express.post('/api/transactions/apply', this.#onApplyTransactionUpdate.bind(this))
@@ -186,6 +187,24 @@ export default class App {
             });
         } catch (error) {
             console.error('Could not load uncategorized transactions:', error);
+            res.status(500).json({
+                ok: false,
+                error: error.message,
+            });
+        }
+    }
+
+    async #onGetUncategorizedMetadata(req, res) {
+        try {
+            const destination = req.query?.destination ? String(req.query.destination).trim() : null;
+            const result = await this.#getFireflyService().getUncategorizedMetadata(destination);
+
+            res.status(200).json({
+                ok: true,
+                ...result,
+            });
+        } catch (error) {
+            console.error('Could not load uncategorized metadata:', error);
             res.status(500).json({
                 ok: false,
                 error: error.message,
