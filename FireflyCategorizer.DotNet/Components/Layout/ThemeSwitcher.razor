@@ -1,0 +1,42 @@
+<div class="theme-switcher">
+    <FluentSwitch Value="@(Mode == DesignThemeModes.Dark)"
+                  ValueChanged="OnModeSwitchChanged"
+                  Label="Theme">
+        <span slot="checked-message">Dark</span>
+        <span slot="unchecked-message">System</span>
+    </FluentSwitch>
+
+    <FluentSelect Class="theme-select"
+                  Items="themeColors"
+                  @bind-SelectedOption="OfficeColor">
+        <OptionTemplate>
+            <span>@context</span>
+        </OptionTemplate>
+    </FluentSelect>
+</div>
+
+@code {
+    private readonly Microsoft.FluentUI.AspNetCore.Components.OfficeColor?[] themeColors =
+    [
+        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Excel,
+        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Outlook,
+        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Teams,
+        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Word,
+        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.PowerPoint,
+    ];
+
+    [Parameter]
+    public DesignThemeModes Mode { get; set; }
+
+    [Parameter]
+    public EventCallback<DesignThemeModes> ModeChanged { get; set; }
+
+    [Parameter]
+    public OfficeColor? OfficeColor { get; set; }
+
+    [Parameter]
+    public EventCallback<OfficeColor?> OfficeColorChanged { get; set; }
+
+    private Task OnModeSwitchChanged(bool enabled)
+        => ModeChanged.InvokeAsync(enabled ? DesignThemeModes.Dark : DesignThemeModes.System);
+}

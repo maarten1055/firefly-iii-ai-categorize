@@ -1,0 +1,25 @@
+<div class="summary-grid">
+    <FluentCard Class="summary-card">
+        <div class="summary-label">Queued</div>
+        <div class="summary-value">@GetStatusCount("queued")</div>
+    </FluentCard>
+    <FluentCard Class="summary-card">
+        <div class="summary-label">In progress</div>
+        <div class="summary-value">@GetStatusCount("in_progress")</div>
+    </FluentCard>
+    <FluentCard Class="summary-card">
+        <div class="summary-label">Partial or failed</div>
+        <div class="summary-value">@(GetStatusCount("partial") + GetStatusCount("failed"))</div>
+    </FluentCard>
+    <FluentCard Class="summary-card">
+        <div class="summary-label">Finished</div>
+        <div class="summary-value">@GetStatusCount("finished")</div>
+    </FluentCard>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<JobRecord> Jobs { get; set; } = [];
+
+    private int GetStatusCount(string status) => Jobs.Count(job => string.Equals(job.Status, status, StringComparison.Ordinal));
+}

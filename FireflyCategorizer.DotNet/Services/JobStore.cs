@@ -1,20 +1,12 @@
-using FireflyCategorizer.DotNet.Hubs;
 using FireflyCategorizer.DotNet.Models;
-using Microsoft.AspNetCore.SignalR;
 
 namespace FireflyCategorizer.DotNet.Services;
 
 public sealed class JobStore
 {
     private readonly Dictionary<string, JobRecord> _jobs = new();
-    private readonly IHubContext<JobsHub> _hubContext;
 
     public event Action? Changed;
-
-    public JobStore(IHubContext<JobsHub> hubContext)
-    {
-        _hubContext = hubContext;
-    }
 
     public IReadOnlyList<JobRecord> GetJobsSnapshot()
     {
@@ -103,17 +95,8 @@ public sealed class JobStore
 
     private async Task BroadcastAsync(string eventName, JobRecord job, CancellationToken cancellationToken)
     {
-        try
-        {
-            await _hubContext.Clients.All.SendAsync(eventName, new
-            {
-                job,
-                jobs = GetJobsSnapshot(),
-            }, cancellationToken);
-        }
-        finally
-        {
-            Changed?.Invoke();
-        }
+        cancellationToken.ThrowIfCancellationRequested();
+        Changed?.Invoke();
+        await Task.CompletedTask;
     }
 }

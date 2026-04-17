@@ -1,0 +1,102 @@
+<FluentCard Class="panel-card">
+    <div class="section-header">
+        <div>
+            <div class="section-kicker">Queue activity</div>
+            <h2>Recent jobs</h2>
+        </div>
+        <div class="inline-status">Live server updates</div>
+    </div>
+
+    @if (Jobs.Count == 0)
+    {
+        <p class="muted-copy">No jobs have been created yet.</p>
+    }
+    else
+    {
+        <FluentPaginator State="pagination" />
+        <div class="data-grid-shell">
+            <FluentDataGrid Items="Jobs.AsQueryable()"
+                            Pagination="pagination"
+                            AutoFit="true"
+                            MultiLine="true"
+                            RowSize="DataGridRowSize.Small"
+                            ShowHover="true"
+                            TGridItem="JobRecord">
+                <TemplateColumn Title="Destination">
+                    <div class="grid-primary">@GetValue(context.Data.DestinationName, "Unknown destination")</div>
+                    <div class="grid-secondary">@context.Created.LocalDateTime.ToString("g")</div>
+                </TemplateColumn>
+                <TemplateColumn Title="Status">
+                    <span class="status-pill @GetStatusCss(context.Status)">@GetStatusLabel(context.Status)</span>
+                </TemplateColumn>
+                <TemplateColumn Title="Description">
+                    <div class="grid-primary">@GetValue(context.Data.Description, "No description")</div>
+                    <div class="grid-secondary">ID: @context.Id</div>
+                </TemplateColumn>
+                <TemplateColumn Title="Guess">
+                    <div class="grid-primary">Category: @GetValue(context.Data.Category, "Not set")</div>
+                    <div class="grid-secondary">Budget: @GetValue(context.Data.Budget, "Not set")</div>
+                </TemplateColumn>
+                <TemplateColumn Title="Actions">
+                    <div class="grid-actions">
+                        <FluentButton Appearance="Appearance.Stealth" @onclick="() => ViewDetailsRequested.InvokeAsync(context)">Details</FluentButton>
+                        @if (CanFillMissing(context))
+                        {
+                            <FluentButton Appearance="Appearance.Accent"
+                                          Disabled="@PendingFillJobIds.Contains(context.Id)"
+                                          @onclick="() => FillMissingRequested.InvokeAsync(context.Id)">
+                                @(PendingFillJobIds.Contains(context.Id) ? "Updating..." : $"Fill {GetMissingField(context)}")
+                            </FluentButton>
+                        }
+                    </div>
+                </TemplateColumn>
+            </FluentDataGrid>
+        </div>
+        <FluentPaginator State="pagination" />
+    }
+</FluentCard>
+
+@code {
+    private readonly PaginationState pagination = new() { ItemsPerPage = 8 };
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<JobRecord> Jobs { get; set; } = [];
+
+    [Parameter]
+    public HashSet<string> PendingFillJobIds { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public EventCallback<string> FillMissingRequested { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<JobRecord> ViewDetailsRequested { get; set; }
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "in_progress" => "In progress",
+        "partial" => "Partial",
+        "finished" => "Finished",
+        "failed" => "Failed",
+        _ => "Queued",
+    };
+
+    private static string GetStatusCss(string status) => status switch
+    {
+        "in_progress" => "in-progress",
+        "partial" => "partial",
+        "finished" => "ready",
+        "failed" => "failed",
+        _ => "queued",
+    };
+
+    private static bool CanFillMissing(JobRecord job)
+    {
+        var hasCategory = !string.IsNullOrWhiteSpace(job.Data.Category);
+        var hasBudget = !string.IsNullOrWhiteSpace(job.Data.Budget);
+        return job.Status == "partial" && hasCategory != hasBudget;
+    }
+
+    private static string GetMissingField(JobRecord job) => string.IsNullOrWhiteSpace(job.Data.Category) ? "category" : "budget";
+
+    private static string GetValue(string? value, string fallback) => string.IsNullOrWhiteSpace(value) ? fallback : value;
+}

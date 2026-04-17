@@ -71,6 +71,14 @@ textarea {
     flex-wrap: wrap;
 }
 
+.shell-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .shell-nav-link,
 .app-link-button {
     display: inline-flex;
@@ -98,6 +106,21 @@ textarea {
 
 .shell-content {
     padding-bottom: 2rem;
+}
+
+.theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 0.8rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--neutral-fill-layer-rest) 88%, white);
+    border: 1px solid color-mix(in srgb, var(--neutral-stroke-rest) 45%, transparent);
+}
+
+.theme-select {
+    min-width: 150px;
 }
 
 .shell-footer {
@@ -272,6 +295,67 @@ textarea {
     margin-top: 1rem;
 }
 
+.data-grid-shell {
+    overflow-x: auto;
+}
+
+.grid-primary {
+    font-weight: 600;
+}
+
+.grid-secondary {
+    color: var(--neutral-foreground-hint);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+.grid-select {
+    width: 100%;
+    min-height: 40px;
+    padding: 0.55rem 0.7rem;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--neutral-stroke-rest) 70%, transparent);
+    background: color-mix(in srgb, white 88%, var(--neutral-fill-layer-rest));
+}
+
+.grid-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.grid-error {
+    margin-top: 0.5rem;
+    color: #b42318;
+    font-size: 0.9rem;
+}
+
+.dialog-stack {
+    display: grid;
+    gap: 1rem;
+}
+
+.dialog-block {
+    padding: 1rem;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--neutral-fill-layer-rest) 92%, white);
+    border: 1px solid color-mix(in srgb, var(--neutral-stroke-rest) 40%, transparent);
+}
+
+.dialog-block h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+.dialog-kv {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.dialog-kv .kv-row {
+    padding: 0.2rem 0;
+}
+
 .message-box {
     padding: 0.9rem 1rem;
     border-radius: 16px;
@@ -354,6 +438,7 @@ textarea {
     }
 
     .shell-header,
+    .shell-header-actions,
     .section-header,
     .job-head,
     .pagination-row,

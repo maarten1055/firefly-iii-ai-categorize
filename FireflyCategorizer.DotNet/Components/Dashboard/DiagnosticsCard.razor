@@ -1,0 +1,61 @@
+<FluentCard Class="panel-card">
+    <div class="section-header">
+        <div>
+            <div class="section-kicker">System check</div>
+            <h2>Provider health</h2>
+        </div>
+        @if (IsRunning)
+        {
+            <div class="inline-status">Running checks...</div>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <div class="message-box error">@Error</div>
+    }
+
+    @if (Checks.Count == 0 && string.IsNullOrWhiteSpace(Error))
+    {
+        <p class="muted-copy">Run a live check against Firefly III and your configured AI provider.</p>
+    }
+    else
+    {
+        <div class="diagnostics-grid">
+            @foreach (var check in Checks)
+            {
+                <article class="diagnostic-item @(check.Ok ? "ok" : "error")">
+                    <div class="diagnostic-title-row">
+                        <strong>@check.Name</strong>
+                        <span class="status-pill @(check.Ok ? "ready" : "failed")">@(check.Ok ? "OK" : "Failed")</span>
+                    </div>
+                    @foreach (var pair in check.Details)
+                    {
+                        <div class="kv-row">
+                            <span>@pair.Key</span>
+                            <strong>@pair.Value</strong>
+                        </div>
+                    }
+                </article>
+            }
+        </div>
+    }
+
+    <div class="hero-actions section-actions">
+        <FluentButton Appearance="Appearance.Accent" @onclick="RefreshRequested">Run diagnostics</FluentButton>
+    </div>
+</FluentCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DiagnosticCheckItem> Checks { get; set; } = [];
+
+    [Parameter]
+    public string? Error { get; set; }
+
+    [Parameter]
+    public bool IsRunning { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback RefreshRequested { get; set; }
+}

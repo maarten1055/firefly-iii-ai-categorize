@@ -1,4 +1,3 @@
-using FireflyCategorizer.DotNet.Hubs;
 using FireflyCategorizer.DotNet.Models;
 using FireflyCategorizer.DotNet.Services;
 using Microsoft.FluentUI.AspNetCore.Components;
@@ -19,7 +18,6 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
 	options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
-builder.Services.AddSignalR();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<FireflyService>();
 builder.Services.AddSingleton<AiClassifierService>();
@@ -34,8 +32,6 @@ var enableUi = string.Equals(app.Configuration["ENABLE_UI"], "true", StringCompa
 
 app.UseStaticFiles();
 app.UseAntiforgery();
-
-app.MapHub<JobsHub>("/hubs/jobs");
 
 if (enableUi)
 {

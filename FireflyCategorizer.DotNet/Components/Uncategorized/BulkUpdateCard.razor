@@ -1,0 +1,81 @@
+<FluentCard Class="panel-card">
+    <div class="section-header">
+        <div>
+            <div class="section-kicker">Bulk repair</div>
+            <h2>Apply one decision to the current destination</h2>
+        </div>
+    </div>
+
+    <p class="muted-copy">
+        @if (string.IsNullOrWhiteSpace(SelectedDestination))
+        {
+            <span>Select a destination first to bulk update matching transactions.</span>
+        }
+        else
+        {
+            <span>Bulk updates affect empty values for <strong>@SelectedDestination</strong>.</span>
+        }
+    </p>
+
+    <div class="filters-grid">
+        <label>
+            <span>Bulk category</span>
+            <select value="@BulkCategory" @onchange="BulkCategoryChanged" disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
+                <option value="">Leave unchanged</option>
+                @foreach (var category in Categories)
+                {
+                    <option value="@category">@category</option>
+                }
+            </select>
+        </label>
+
+        <label>
+            <span>Bulk budget</span>
+            <select value="@BulkBudget" @onchange="BulkBudgetChanged" disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
+                <option value="">Leave unchanged</option>
+                @foreach (var budget in Budgets)
+                {
+                    <option value="@budget">@budget</option>
+                }
+            </select>
+        </label>
+    </div>
+
+    <div class="hero-actions">
+        <FluentButton Appearance="Appearance.Accent" Disabled="@(!CanApply || IsPending)" @onclick="ApplyRequested">
+            @(IsPending ? "Applying..." : "Apply to filtered transactions")
+        </FluentButton>
+    </div>
+</FluentCard>
+
+@code {
+    [Parameter]
+    public string SelectedDestination { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public IEnumerable<string> Categories { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public IEnumerable<string> Budgets { get; set; } = [];
+
+    [Parameter]
+    public string BulkCategory { get; set; } = string.Empty;
+
+    [Parameter]
+    public string BulkBudget { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool CanApply { get; set; }
+
+    [Parameter]
+    public bool IsPending { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<ChangeEventArgs> BulkCategoryChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<ChangeEventArgs> BulkBudgetChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback ApplyRequested { get; set; }
+}

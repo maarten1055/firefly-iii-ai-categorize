@@ -1,0 +1,52 @@
+@implements IDialogContentComponent<JobRecord>
+
+<div class="dialog-stack">
+    <section class="dialog-block">
+        <h3>Job summary</h3>
+        <div class="dialog-kv">
+            <div class="kv-row"><span>Status</span><strong>@Content.Status</strong></div>
+            <div class="kv-row"><span>Destination</span><strong>@(Content.Data.DestinationName ?? "Unknown destination")</strong></div>
+            <div class="kv-row"><span>Description</span><strong>@(Content.Data.Description ?? "No description")</strong></div>
+            <div class="kv-row"><span>Category</span><strong>@(Content.Data.Category ?? "Not set")</strong></div>
+            <div class="kv-row"><span>Budget</span><strong>@(Content.Data.Budget ?? "Not set")</strong></div>
+            <div class="kv-row"><span>History used</span><strong>@Content.Data.HistoryCount</strong></div>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(Content.Data.ManualUpdate))
+    {
+        <section class="dialog-block">
+            <h3>Manual update</h3>
+            <div>@Content.Data.ManualUpdate</div>
+        </section>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Content.Data.Error))
+    {
+        <section class="dialog-block">
+            <h3>Error</h3>
+            <div>@Content.Data.Error</div>
+        </section>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Content.Data.Prompt))
+    {
+        <section class="dialog-block">
+            <h3>Prompt</h3>
+            <pre>@Content.Data.Prompt</pre>
+        </section>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Content.Data.Response))
+    {
+        <section class="dialog-block">
+            <h3>Model response</h3>
+            <pre>@Content.Data.Response</pre>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public JobRecord Content { get; set; } = default!;
+}

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj": {}
+    "C:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj": {}
   },
   "projects": {
-    "c:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj": {
+    "C:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj",
+        "projectUniqueName": "C:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj",
         "projectName": "FireflyCategorizer.DotNet",
-        "projectPath": "c:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj",
+        "projectPath": "C:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj",
         "packagesPath": "C:\\Users\\maarteng\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\obj\\",
+        "outputPath": "C:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

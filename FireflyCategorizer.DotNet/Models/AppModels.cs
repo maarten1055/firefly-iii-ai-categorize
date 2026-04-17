@@ -43,6 +43,13 @@ public sealed class ClassificationResult
     public bool CanUpdate { get; set; }
 }
 
+public sealed class DiagnosticCheckItem
+{
+    public string Name { get; set; } = string.Empty;
+    public bool Ok { get; set; }
+    public Dictionary<string, string> Details { get; set; } = new(StringComparer.Ordinal);
+}
+
 public sealed class UncategorizedTransaction
 {
     public string TransactionId { get; set; } = string.Empty;
@@ -118,6 +125,13 @@ public sealed class ApplyTransactionRequest
 public sealed class ApplyDestinationRequest
 {
     public string? Destination { get; set; }
+    public SelectionValues Selections { get; set; } = new();
+}
+
+public sealed class TransactionReviewDialogModel
+{
+    public UncategorizedTransaction Transaction { get; set; } = new();
+    public ClassificationResult? Classification { get; set; }
     public SelectionValues Selections { get; set; } = new();
 }
 

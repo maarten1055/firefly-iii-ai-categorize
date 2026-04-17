@@ -71,10 +71,10 @@ c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\Firefly
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\kwrall9b0s-{0}-zbg73p58hc-zbg73p58hc.gz
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\m3ffqup1h6-{0}-kz8gc8cxma-kz8gc8cxma.gz
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\3emkb5z5ma-{0}-sd59ooda5f-sd59ooda5f.gz
-c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\bci8sdt20d-{0}-8qtg9102xt-8qtg9102xt.gz
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\qouj2s6ft8-{0}-uhfllo7vmv-uhfllo7vmv.gz
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\71r1wz574n-{0}-b9228eflpl-b9228eflpl.gz
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\zmaaysp9po-{0}-2tj1sjhksk-2tj1sjhksk.gz
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\dq5aeucd8z-{0}-84wtju4z0n-84wtju4z0n.gz
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\lxu5rjy4bg-{0}-ee8do477pl-ee8do477pl.gz
 c:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\FireflyC.33777C6E.Up2Date
+C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\FireflyCategorizer.DotNet\obj\Debug\net10.0\compressed\bci8sdt20d-{0}-jypzn1dm43-jypzn1dm43.gz

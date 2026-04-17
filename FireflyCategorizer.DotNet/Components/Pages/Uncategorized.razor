@@ -3,6 +3,8 @@
 @inject FireflyService FireflyService
 @inject CategorizationCoordinator Coordinator
 @inject ILogger<Uncategorized> Logger
+@inject IDialogService DialogService
+@inject IToastService ToastService
 
 <PageTitle>Uncategorized Transactions</PageTitle>
 
@@ -27,206 +29,141 @@
         <div class="message-box success">@pageSuccess</div>
     }
 
-    <div class="summary-grid">
-        <FluentCard Class="summary-card">
-            <div class="summary-label">Transactions in view</div>
-            <div class="summary-value">@summary.TotalTransactions</div>
-        </FluentCard>
-        <FluentCard Class="summary-card">
-            <div class="summary-label">Without category</div>
-            <div class="summary-value">@summary.WithoutCategory</div>
-        </FluentCard>
-        <FluentCard Class="summary-card">
-            <div class="summary-label">Without budget</div>
-            <div class="summary-value">@summary.WithoutBudget</div>
-        </FluentCard>
-        <FluentCard Class="summary-card">
-            <div class="summary-label">Scan status</div>
-            <div class="summary-value small">@(metadataComplete && paginationComplete ? "Complete" : "Updating")</div>
-        </FluentCard>
-    </div>
+    <UncategorizedSummaryCards Summary="summary"
+                               MetadataComplete="metadataComplete"
+                               PaginationComplete="paginationComplete" />
 
-    <FluentCard Class="panel-card">
-        <div class="filters-grid">
-            <label>
-                <span>Rows per page</span>
-                <select value="@pageSize" @onchange="OnPageSizeChanged">
-                    @foreach (var size in pageSizeOptions)
-                    {
-                        <option value="@size">@size</option>
-                    }
-                </select>
-            </label>
+    <UncategorizedFiltersCard Page="page"
+                              PageSize="pageSize"
+                              PageSizeOptions="pageSizeOptions"
+                              SelectedDestination="selectedDestination"
+                              Destinations="destinations"
+                              PaginationComplete="paginationComplete"
+                              TotalPages="totalPages"
+                              PageSizeChanged="OnPageSizeChanged"
+                              DestinationChanged="OnDestinationChanged" />
 
-            <label>
-                <span>Destination</span>
-                <select value="@selectedDestination" @onchange="OnDestinationChanged">
-                    <option value="">All destinations</option>
-                    @foreach (var destination in destinations)
-                    {
-                        <option value="@destination">@destination</option>
-                    }
-                </select>
-            </label>
-        </div>
-        <p class="muted-copy">Page @(page) of @(paginationComplete ? totalPages.ToString() : $"{totalPages}+")</p>
-    </FluentCard>
+    <BulkUpdateCard SelectedDestination="selectedDestination"
+                    Categories="categories"
+                    Budgets="budgets"
+                    BulkCategory="bulkCategory"
+                    BulkBudget="bulkBudget"
+                    CanApply="CanBulkApply"
+                    IsPending="bulkApplyPending"
+                    BulkCategoryChanged="OnBulkCategoryChanged"
+                    BulkBudgetChanged="OnBulkBudgetChanged"
+                    ApplyRequested="PromptBulkApplyAsync" />
 
     <FluentCard Class="panel-card">
         <div class="section-header">
             <div>
-                <div class="section-kicker">Bulk repair</div>
-                <h2>Apply one decision to the current destination</h2>
+                <div class="section-kicker">Current page</div>
+                <h2>Transactions</h2>
             </div>
+            <div class="inline-status">@items.Count row(s)</div>
         </div>
 
-        <p class="muted-copy">
-            @if (string.IsNullOrWhiteSpace(selectedDestination))
-            {
-                <span>Select a destination first to bulk update matching transactions.</span>
-            }
-            else
-            {
-                <span>Bulk updates affect empty values for <strong>@selectedDestination</strong>.</span>
-            }
-        </p>
-
-        <div class="filters-grid">
-            <label>
-                <span>Bulk category</span>
-                <select value="@bulkCategory" @onchange="OnBulkCategoryChanged" disabled="@string.IsNullOrWhiteSpace(selectedDestination)">
-                    <option value="">Leave unchanged</option>
-                    @foreach (var category in categories)
-                    {
-                        <option value="@category">@category</option>
-                    }
-                </select>
-            </label>
-
-            <label>
-                <span>Bulk budget</span>
-                <select value="@bulkBudget" @onchange="OnBulkBudgetChanged" disabled="@string.IsNullOrWhiteSpace(selectedDestination)">
-                    <option value="">Leave unchanged</option>
-                    @foreach (var budget in budgets)
-                    {
-                        <option value="@budget">@budget</option>
-                    }
-                </select>
-            </label>
-        </div>
-
-        <div class="hero-actions">
-            <FluentButton Appearance="Appearance.Accent" Disabled="@(!CanBulkApply || bulkApplyPending)" @onclick="ApplyBulkAsync">
-                @(bulkApplyPending ? "Applying..." : "Apply to filtered transactions")
-            </FluentButton>
-        </div>
-    </FluentCard>
-
-    <div class="job-list">
         @if (items.Count == 0 && string.IsNullOrWhiteSpace(pageError))
         {
-            <FluentCard Class="panel-card">
-                <p class="muted-copy">No transactions match the current filter.</p>
-            </FluentCard>
+            <p class="muted-copy">No transactions match the current filter.</p>
         }
         else
         {
-            @foreach (var transaction in items)
-            {
-                var classification = GetClassification(transaction.TransactionJournalId);
-                var selection = GetSelection(transaction.TransactionJournalId);
-                <FluentCard Class="@($"transaction-card {GetTransactionCss(transaction)}")">
-                    <div class="job-head">
-                        <div>
-                            <div class="job-title">@GetDisplay(transaction.DestinationName, "Unknown destination")</div>
-                            <div class="job-meta">@GetDisplay(transaction.Date, "No date")</div>
-                        </div>
-                        <span class="status-pill @GetTransactionCss(transaction)">@GetTransactionStatus(transaction)</span>
-                    </div>
-
-                    <div class="job-body">
-                        <div class="kv-row"><span>Description</span><strong>@GetDisplay(transaction.Description, "No description")</strong></div>
-                        <div class="kv-row"><span>Source</span><strong>@GetDisplay(transaction.SourceName, "Unknown source")</strong></div>
-                        <div class="kv-row"><span>Amount</span><strong>@FormatAmount(transaction)</strong></div>
-                        <div class="kv-row"><span>Current category</span><strong>@GetDisplay(transaction.Category, "Missing")</strong></div>
-                        <div class="kv-row"><span>Current budget</span><strong>@GetDisplay(transaction.Budget, "Missing")</strong></div>
-                    </div>
-
-                    @if (classification is not null && !string.IsNullOrWhiteSpace(classification.Error))
-                    {
-                        <div class="message-box error">@classification.Error</div>
-                    }
-
-                    <div class="filters-grid transaction-controls">
-                        <label>
-                            <span>Category</span>
-                            <select value="@(selection.Category ?? string.Empty)"
-                                    @onchange="args => UpdateSelection(transaction.TransactionJournalId, category: args.Value?.ToString())"
-                                    disabled="@(transaction.Category is not null)">
-                                <option value="">@(transaction.Category is not null ? transaction.Category : "Select category")</option>
+            <div class="data-grid-shell">
+                <FluentDataGrid Items="items.AsQueryable()"
+                                AutoFit="true"
+                                MultiLine="true"
+                                RowSize="DataGridRowSize.Small"
+                                ShowHover="true"
+                                TGridItem="UncategorizedTransaction">
+                    <TemplateColumn Title="Destination">
+                        <div class="grid-primary">@GetDisplay(context.DestinationName, "Unknown destination")</div>
+                        <div class="grid-secondary">@GetDisplay(context.Date, "No date")</div>
+                    </TemplateColumn>
+                    <TemplateColumn Title="Description">
+                        <div class="grid-primary">@GetDisplay(context.Description, "No description")</div>
+                        <div class="grid-secondary">@GetDisplay(context.SourceName, "Unknown source")</div>
+                    </TemplateColumn>
+                    <TemplateColumn Title="Amount">
+                        <div class="grid-primary">@FormatAmount(context)</div>
+                        <div class="grid-secondary">@GetTransactionStatus(context)</div>
+                    </TemplateColumn>
+                    <TemplateColumn Title="Category">
+                        @{ var selection = GetSelection(context.TransactionJournalId); }
+                        @if (!string.IsNullOrWhiteSpace(context.Category))
+                        {
+                            <div class="grid-primary">@context.Category</div>
+                        }
+                        else
+                        {
+                            <select class="grid-select"
+                                    value="@(selection.Category ?? string.Empty)"
+                                    @onchange="args => UpdateSelection(context.TransactionJournalId, category: args.Value?.ToString())">
+                                <option value="">Select category</option>
                                 @foreach (var category in categories)
                                 {
                                     <option value="@category">@category</option>
                                 }
                             </select>
-                        </label>
 
-                        <label>
-                            <span>Budget</span>
-                            <select value="@(selection.Budget ?? string.Empty)"
-                                    @onchange="args => UpdateSelection(transaction.TransactionJournalId, budget: args.Value?.ToString())"
-                                    disabled="@(transaction.Budget is not null)">
-                                <option value="">@(transaction.Budget is not null ? transaction.Budget : "Select budget")</option>
+                            @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Category))
+                            {
+                                <div class="grid-secondary">AI: @GetClassification(context.TransactionJournalId)?.Category</div>
+                            }
+                        }
+                    </TemplateColumn>
+                    <TemplateColumn Title="Budget">
+                        @{ var selection = GetSelection(context.TransactionJournalId); }
+                        @if (!string.IsNullOrWhiteSpace(context.Budget))
+                        {
+                            <div class="grid-primary">@context.Budget</div>
+                        }
+                        else
+                        {
+                            <select class="grid-select"
+                                    value="@(selection.Budget ?? string.Empty)"
+                                    @onchange="args => UpdateSelection(context.TransactionJournalId, budget: args.Value?.ToString())">
+                                <option value="">Select budget</option>
                                 @foreach (var budget in budgets)
                                 {
                                     <option value="@budget">@budget</option>
                                 }
                             </select>
-                        </label>
-                    </div>
 
-                    <div class="hero-actions">
-                        <FluentButton Appearance="Appearance.Stealth"
-                                      Disabled="@pendingClassifications.Contains(transaction.TransactionJournalId)"
-                                      @onclick="() => ClassifyAsync(transaction)">
-                            @(pendingClassifications.Contains(transaction.TransactionJournalId) ? "Classifying..." : "Ask AI")
-                        </FluentButton>
-                        <FluentButton Appearance="Appearance.Accent"
-                                      Disabled="@(!CanApply(transaction) || pendingUpdates.Contains(transaction.TransactionJournalId))"
-                                      @onclick="() => ApplyAsync(transaction)">
-                            @(pendingUpdates.Contains(transaction.TransactionJournalId) ? "Applying..." : "Apply")
-                        </FluentButton>
-                    </div>
-
-                    @if (classification is not null)
-                    {
-                        <div class="suggestion-block">
-                            <div class="kv-row"><span>AI status</span><strong>@classification.Status</strong></div>
-                            <div class="kv-row"><span>Suggested category</span><strong>@GetDisplay(classification.Category, "No suggestion")</strong></div>
-                            <div class="kv-row"><span>Suggested budget</span><strong>@GetDisplay(classification.Budget, "No suggestion")</strong></div>
-                            <div class="kv-row"><span>History used</span><strong>@classification.HistoryCount</strong></div>
+                            @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Budget))
+                            {
+                                <div class="grid-secondary">AI: @GetClassification(context.TransactionJournalId)?.Budget</div>
+                            }
+                        }
+                    </TemplateColumn>
+                    <TemplateColumn Title="Actions">
+                        <div class="grid-actions">
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          Disabled="@pendingClassifications.Contains(context.TransactionJournalId)"
+                                          @onclick="() => ClassifyAsync(context)">
+                                @(pendingClassifications.Contains(context.TransactionJournalId) ? "Classifying..." : "Ask AI")
+                            </FluentButton>
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          Disabled="@(GetClassification(context.TransactionJournalId) is null)"
+                                          @onclick="() => ShowTransactionDetailsAsync(context)">
+                                Details
+                            </FluentButton>
+                            <FluentButton Appearance="Appearance.Accent"
+                                          Disabled="@(!CanApply(context) || pendingUpdates.Contains(context.TransactionJournalId))"
+                                          @onclick="() => ApplyAsync(context)">
+                                @(pendingUpdates.Contains(context.TransactionJournalId) ? "Applying..." : "Apply")
+                            </FluentButton>
                         </div>
 
-                        @if (!string.IsNullOrWhiteSpace(classification.Prompt))
+                        @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Error))
                         {
-                            <details>
-                                <summary>Prompt</summary>
-                                <pre>@classification.Prompt</pre>
-                            </details>
+                            <div class="grid-error">@GetClassification(context.TransactionJournalId)?.Error</div>
                         }
-
-                        @if (!string.IsNullOrWhiteSpace(classification.Response))
-                        {
-                            <details>
-                                <summary>Model response</summary>
-                                <pre>@classification.Response</pre>
-                            </details>
-                        }
-                    }
-                </FluentCard>
-            }
+                    </TemplateColumn>
+                </FluentDataGrid>
+            </div>
         }
-    </div>
+    </FluentCard>
 
     <FluentCard Class="panel-card pagination-panel">
         <div class="pagination-row">
@@ -336,6 +273,7 @@
             await LoadOptionsAsync();
             await LoadMetadataAsync();
             await LoadTransactionsAsync();
+            ToastService.ShowSuccess("Transaction data refreshed.");
         }
         catch (Exception exception)
         {
@@ -458,6 +396,8 @@
             {
                 selection.Budget = result.Budget;
             }
+
+            ToastService.ShowSuccess("AI suggestions loaded for the selected transaction.");
         }
         catch (Exception exception)
         {
@@ -466,6 +406,8 @@
                 Error = exception.Message,
                 Status = "failed",
             };
+
+            ToastService.ShowError($"Classification failed: {exception.Message}");
         }
         finally
         {
@@ -497,17 +439,36 @@
             transaction.Category = result.Transaction.Category;
             transaction.Budget = result.Transaction.Budget;
             pageSuccess = "Transaction updated successfully.";
+            ToastService.ShowSuccess("Transaction updated successfully.");
             await LoadMetadataAsync();
             await LoadTransactionsAsync();
         }
         catch (Exception exception)
         {
             pageError = exception.Message;
+            ToastService.ShowError($"Update failed: {exception.Message}");
         }
         finally
         {
             pendingUpdates.Remove(key);
         }
+    }
+
+    private async Task PromptBulkApplyAsync()
+    {
+        if (!CanBulkApply)
+        {
+            return;
+        }
+
+        var dialog = await DialogService.ShowConfirmationAsync($"Apply the selected values to all matching transactions for {selectedDestination}?", "Apply changes", "Cancel", "Bulk repair");
+        var result = await dialog.Result;
+        if (result.Cancelled)
+        {
+            return;
+        }
+
+        await ApplyBulkAsync();
     }
 
     private async Task ApplyBulkAsync()
@@ -533,11 +494,14 @@
                 ? "Updated 1 transaction."
                 : $"Updated {updatedCount} transactions.";
 
+            ToastService.ShowSuccess(pageSuccess);
+
             await RefreshAllAsync();
         }
         catch (Exception exception)
         {
             pageError = exception.Message;
+            ToastService.ShowError($"Bulk update failed: {exception.Message}");
         }
         finally
         {
@@ -612,6 +576,23 @@
     }
 
     private ClassificationResult? GetClassification(string key) => classifications.GetValueOrDefault(key);
+
+    private async Task ShowTransactionDetailsAsync(UncategorizedTransaction transaction)
+    {
+        await DialogService.ShowPanelAsync<TransactionAiDetailsDialog>(new TransactionReviewDialogModel
+        {
+            Transaction = transaction,
+            Classification = GetClassification(transaction.TransactionJournalId),
+            Selections = GetSelection(transaction.TransactionJournalId),
+        }, new DialogParameters
+        {
+            Title = transaction.DestinationName ?? "Transaction details",
+            Width = "760px",
+            Alignment = HorizontalAlignment.Right,
+            Modal = false,
+            ShowDismiss = true,
+        });
+    }
 
     private bool CanApply(UncategorizedTransaction transaction)
     {

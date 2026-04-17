@@ -1,0 +1,29 @@
+<div class="summary-grid">
+    <FluentCard Class="summary-card">
+        <div class="summary-label">Transactions in view</div>
+        <div class="summary-value">@Summary.TotalTransactions</div>
+    </FluentCard>
+    <FluentCard Class="summary-card">
+        <div class="summary-label">Without category</div>
+        <div class="summary-value">@Summary.WithoutCategory</div>
+    </FluentCard>
+    <FluentCard Class="summary-card">
+        <div class="summary-label">Without budget</div>
+        <div class="summary-value">@Summary.WithoutBudget</div>
+    </FluentCard>
+    <FluentCard Class="summary-card">
+        <div class="summary-label">Scan status</div>
+        <div class="summary-value small">@(MetadataComplete && PaginationComplete ? "Complete" : "Updating")</div>
+    </FluentCard>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public MetadataSummary Summary { get; set; } = new();
+
+    [Parameter]
+    public bool MetadataComplete { get; set; }
+
+    [Parameter]
+    public bool PaginationComplete { get; set; }
+}

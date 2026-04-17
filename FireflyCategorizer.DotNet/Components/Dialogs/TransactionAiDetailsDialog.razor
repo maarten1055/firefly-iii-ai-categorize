@@ -1,0 +1,62 @@
+@implements IDialogContentComponent<TransactionReviewDialogModel>
+
+<div class="dialog-stack">
+    <section class="dialog-block">
+        <h3>Transaction</h3>
+        <div class="dialog-kv">
+            <div class="kv-row"><span>Destination</span><strong>@(Content.Transaction.DestinationName ?? "Unknown destination")</strong></div>
+            <div class="kv-row"><span>Description</span><strong>@(Content.Transaction.Description ?? "No description")</strong></div>
+            <div class="kv-row"><span>Source</span><strong>@(Content.Transaction.SourceName ?? "Unknown source")</strong></div>
+            <div class="kv-row"><span>Amount</span><strong>@FormatAmount(Content.Transaction)</strong></div>
+            <div class="kv-row"><span>Current category</span><strong>@(Content.Transaction.Category ?? "Missing")</strong></div>
+            <div class="kv-row"><span>Current budget</span><strong>@(Content.Transaction.Budget ?? "Missing")</strong></div>
+        </div>
+    </section>
+
+    <section class="dialog-block">
+        <h3>Selections and suggestions</h3>
+        <div class="dialog-kv">
+            <div class="kv-row"><span>Selected category</span><strong>@(Content.Selections.Category ?? "None")</strong></div>
+            <div class="kv-row"><span>Selected budget</span><strong>@(Content.Selections.Budget ?? "None")</strong></div>
+            <div class="kv-row"><span>AI status</span><strong>@(Content.Classification?.Status ?? "Not classified")</strong></div>
+            <div class="kv-row"><span>Suggested category</span><strong>@(Content.Classification?.Category ?? "No suggestion")</strong></div>
+            <div class="kv-row"><span>Suggested budget</span><strong>@(Content.Classification?.Budget ?? "No suggestion")</strong></div>
+            <div class="kv-row"><span>History used</span><strong>@(Content.Classification?.HistoryCount ?? 0)</strong></div>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(Content.Classification?.Error))
+    {
+        <section class="dialog-block">
+            <h3>Error</h3>
+            <div>@Content.Classification?.Error</div>
+        </section>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Content.Classification?.Prompt))
+    {
+        <section class="dialog-block">
+            <h3>Prompt</h3>
+            <pre>@Content.Classification?.Prompt</pre>
+        </section>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Content.Classification?.Response))
+    {
+        <section class="dialog-block">
+            <h3>Model response</h3>
+            <pre>@Content.Classification?.Response</pre>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public TransactionReviewDialogModel Content { get; set; } = default!;
+
+    private static string FormatAmount(UncategorizedTransaction transaction)
+    {
+        var amount = string.IsNullOrWhiteSpace(transaction.Amount) ? "0.00" : transaction.Amount;
+        return string.IsNullOrWhiteSpace(transaction.CurrencyCode) ? amount : $"{amount} {transaction.CurrencyCode}";
+    }
+}

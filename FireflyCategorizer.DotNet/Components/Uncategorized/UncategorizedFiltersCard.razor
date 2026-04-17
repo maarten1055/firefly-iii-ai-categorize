@@ -1,0 +1,54 @@
+<FluentCard Class="panel-card">
+    <div class="filters-grid">
+        <label>
+            <span>Rows per page</span>
+            <select value="@PageSize" @onchange="PageSizeChanged">
+                @foreach (var size in PageSizeOptions)
+                {
+                    <option value="@size">@size</option>
+                }
+            </select>
+        </label>
+
+        <label>
+            <span>Destination</span>
+            <select value="@SelectedDestination" @onchange="DestinationChanged">
+                <option value="">All destinations</option>
+                @foreach (var destination in Destinations)
+                {
+                    <option value="@destination">@destination</option>
+                }
+            </select>
+        </label>
+    </div>
+    <p class="muted-copy">Page @(Page) of @(PaginationComplete ? TotalPages.ToString() : $"{TotalPages}+")</p>
+</FluentCard>
+
+@code {
+    [Parameter]
+    public int Page { get; set; }
+
+    [Parameter]
+    public int PageSize { get; set; }
+
+    [Parameter, EditorRequired]
+    public IEnumerable<int> PageSizeOptions { get; set; } = [];
+
+    [Parameter]
+    public string SelectedDestination { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public IEnumerable<string> Destinations { get; set; } = [];
+
+    [Parameter]
+    public bool PaginationComplete { get; set; }
+
+    [Parameter]
+    public int TotalPages { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<ChangeEventArgs> PageSizeChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<ChangeEventArgs> DestinationChanged { get; set; }
+}
