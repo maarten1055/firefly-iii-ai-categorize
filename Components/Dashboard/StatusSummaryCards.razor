@@ -1,21 +1,21 @@
-<div class="summary-grid">
-    <FluentCard Class="summary-card">
-        <div class="summary-label">Queued</div>
-        <div class="summary-value">@GetStatusCount("queued")</div>
+<FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="16" VerticalGap="16">
+    <FluentCard style="min-width: 180px;">
+        <div>Queued</div>
+        <div><strong>@GetStatusCount("queued")</strong></div>
     </FluentCard>
-    <FluentCard Class="summary-card">
-        <div class="summary-label">In progress</div>
-        <div class="summary-value">@GetStatusCount("in_progress")</div>
+    <FluentCard style="min-width: 180px;">
+        <div>In progress</div>
+        <div><strong>@GetStatusCount("in_progress")</strong></div>
     </FluentCard>
-    <FluentCard Class="summary-card">
-        <div class="summary-label">Partial or failed</div>
-        <div class="summary-value">@(GetStatusCount("partial") + GetStatusCount("failed"))</div>
+    <FluentCard style="min-width: 180px;">
+        <div>Partial or failed</div>
+        <div><strong>@(GetStatusCount("partial") + GetStatusCount("failed"))</strong></div>
     </FluentCard>
-    <FluentCard Class="summary-card">
-        <div class="summary-label">Finished</div>
-        <div class="summary-value">@GetStatusCount("finished")</div>
+    <FluentCard style="min-width: 180px;">
+        <div>Finished</div>
+        <div><strong>@GetStatusCount("finished")</strong></div>
     </FluentCard>
-</div>
+</FluentStack>
 
 @code {
     [Parameter, EditorRequired]

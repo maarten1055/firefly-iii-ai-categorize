@@ -6,27 +6,29 @@
 <FluentToastProvider MaxToastCount="5" Timeout="5000" />
 <FluentDialogProvider />
 
-<div class="shell">
-    <header class="shell-header">
-        <div>
-            <div class="shell-kicker">Blazor server console</div>
-            <div class="shell-title">Firefly III AI Categorizer</div>
-        </div>
-        <div class="shell-header-actions">
-            <nav class="shell-nav">
-                <NavLink href="/" Match="NavLinkMatch.All" class="shell-nav-link">Dashboard</NavLink>
-                <NavLink href="/uncategorized" class="shell-nav-link">Uncategorized</NavLink>
-            </nav>
-            <ThemeSwitcher @bind-Mode="themeMode" @bind-OfficeColor="themeColor" />
-        </div>
-    </header>
+<div style="max-width: 1400px; margin: 0 auto; padding: 1.5rem;">
+    <FluentStack VerticalGap="24">
+        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="16" VerticalGap="16">
+            <FluentStack VerticalGap="4">
+                <small>Blazor server console</small>
+                <strong style="font-size: 1.8rem;">Firefly III AI Categorizer</strong>
+            </FluentStack>
 
-    <main class="shell-content">
-        @Body
-    </main>
-    <footer class="shell-footer">
-        <span>Server-rendered with Blazor and Fluent UI.</span>
-    </footer>
+            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12" VerticalAlignment="VerticalAlignment.Center">
+                <FluentButton Appearance="Appearance.Outline" Href="/">Dashboard</FluentButton>
+                <FluentButton Appearance="Appearance.Outline" Href="/uncategorized">Uncategorized</FluentButton>
+                <ThemeSwitcher @bind-Mode="themeMode" @bind-OfficeColor="themeColor" />
+            </FluentStack>
+        </FluentStack>
+
+        <main>
+            @Body
+        </main>
+
+        <footer>
+            <small>Server-rendered with Blazor and Fluent UI.</small>
+        </footer>
+    </FluentStack>
 </div>
 
 @code {

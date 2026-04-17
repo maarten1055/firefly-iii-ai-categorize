@@ -4,29 +4,34 @@
 @inject CategorizationCoordinator Coordinator
 @inject ILogger<Uncategorized> Logger
 @inject IDialogService DialogService
+@inject NavigationManager Navigation
 @inject IToastService ToastService
 
 <PageTitle>Uncategorized Transactions</PageTitle>
 
-<section class="page-grid">
-    <FluentCard Class="hero-card compact">
-        <div class="hero-kicker">Review workspace</div>
-        <h1>Transactions missing category or budget</h1>
-        <p class="hero-copy">Filter by destination, classify individual items, or apply one decision across a destination batch.</p>
-        <div class="hero-actions">
-            <a href="/" class="app-link-button subtle">Back to dashboard</a>
-            <FluentButton Appearance="Appearance.Accent" @onclick="RefreshAllAsync">Refresh</FluentButton>
-        </div>
+<FluentStack VerticalGap="20">
+    <FluentCard>
+        <FluentStack VerticalGap="12">
+            <small>Review workspace</small>
+            <div>
+                <h1>Transactions missing category or budget</h1>
+                <p>Filter by destination, classify individual items, or apply one decision across a destination batch.</p>
+            </div>
+            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
+                <FluentButton Appearance="Appearance.Stealth" @onclick='() => Navigation.NavigateTo("/")'>Back to dashboard</FluentButton>
+                <FluentButton Appearance="Appearance.Accent" @onclick="RefreshAllAsync">Refresh</FluentButton>
+            </FluentStack>
+        </FluentStack>
     </FluentCard>
 
     @if (!string.IsNullOrWhiteSpace(pageError))
     {
-        <div class="message-box error">@pageError</div>
+        <FluentMessageBar Intent="MessageIntent.Error" Title="Load failed">@pageError</FluentMessageBar>
     }
 
     @if (!string.IsNullOrWhiteSpace(pageSuccess))
     {
-        <div class="message-box success">@pageSuccess</div>
+        <FluentMessageBar Intent="MessageIntent.Success" Title="Update complete">@pageSuccess</FluentMessageBar>
     }
 
     <UncategorizedSummaryCards Summary="summary"
@@ -54,22 +59,23 @@
                     BulkBudgetChanged="OnBulkBudgetChanged"
                     ApplyRequested="PromptBulkApplyAsync" />
 
-    <FluentCard Class="panel-card">
-        <div class="section-header">
-            <div>
-                <div class="section-kicker">Current page</div>
-                <h2>Transactions</h2>
-            </div>
-            <div class="inline-status">@items.Count row(s)</div>
-        </div>
+    <FluentCard>
+        <FluentStack VerticalGap="12">
+            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="12">
+                <div>
+                    <small>Current page</small>
+                    <h2>Transactions</h2>
+                </div>
+                <strong>@items.Count row(s)</strong>
+            </FluentStack>
 
-        @if (items.Count == 0 && string.IsNullOrWhiteSpace(pageError))
-        {
-            <p class="muted-copy">No transactions match the current filter.</p>
-        }
-        else
-        {
-            <div class="data-grid-shell">
+            @if (items.Count == 0 && string.IsNullOrWhiteSpace(pageError))
+            {
+                <p>No transactions match the current filter.</p>
+            }
+            else
+            {
+                <div style="overflow-x:auto;">
                 <FluentDataGrid Items="items.AsQueryable()"
                                 AutoFit="true"
                                 MultiLine="true"
@@ -77,38 +83,44 @@
                                 ShowHover="true"
                                 TGridItem="UncategorizedTransaction">
                     <TemplateColumn Title="Destination">
-                        <div class="grid-primary">@GetDisplay(context.DestinationName, "Unknown destination")</div>
-                        <div class="grid-secondary">@GetDisplay(context.Date, "No date")</div>
+                        <FluentStack VerticalGap="4">
+                            <strong>@GetDisplay(context.DestinationName, "Unknown destination")</strong>
+                            <small>@GetDisplay(context.Date, "No date")</small>
+                        </FluentStack>
                     </TemplateColumn>
                     <TemplateColumn Title="Description">
-                        <div class="grid-primary">@GetDisplay(context.Description, "No description")</div>
-                        <div class="grid-secondary">@GetDisplay(context.SourceName, "Unknown source")</div>
+                        <FluentStack VerticalGap="4">
+                            <strong>@GetDisplay(context.Description, "No description")</strong>
+                            <small>@GetDisplay(context.SourceName, "Unknown source")</small>
+                        </FluentStack>
                     </TemplateColumn>
                     <TemplateColumn Title="Amount">
-                        <div class="grid-primary">@FormatAmount(context)</div>
-                        <div class="grid-secondary">@GetTransactionStatus(context)</div>
+                        <FluentStack VerticalGap="4">
+                            <strong>@FormatAmount(context)</strong>
+                            <small>@GetTransactionStatus(context)</small>
+                        </FluentStack>
                     </TemplateColumn>
                     <TemplateColumn Title="Category">
                         @{ var selection = GetSelection(context.TransactionJournalId); }
                         @if (!string.IsNullOrWhiteSpace(context.Category))
                         {
-                            <div class="grid-primary">@context.Category</div>
+                            <strong>@context.Category</strong>
                         }
                         else
                         {
-                            <select class="grid-select"
-                                    value="@(selection.Category ?? string.Empty)"
-                                    @onchange="args => UpdateSelection(context.TransactionJournalId, category: args.Value?.ToString())">
-                                <option value="">Select category</option>
+                            <FluentSelect TOption="string"
+                                          SelectedOption="@(selection.Category ?? string.Empty)"
+                                          SelectedOptionChanged="value => OnCategorySelectionChanged(context.TransactionJournalId, value)">
+                                <FluentOption Value="@string.Empty">Select category</FluentOption>
                                 @foreach (var category in categories)
                                 {
-                                    <option value="@category">@category</option>
+                                    <FluentOption Value="@category">@category</FluentOption>
                                 }
-                            </select>
+                            </FluentSelect>
 
                             @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Category))
                             {
-                                <div class="grid-secondary">AI: @GetClassification(context.TransactionJournalId)?.Category</div>
+                                <small>AI: @GetClassification(context.TransactionJournalId)?.Category</small>
                             }
                         }
                     </TemplateColumn>
@@ -116,28 +128,28 @@
                         @{ var selection = GetSelection(context.TransactionJournalId); }
                         @if (!string.IsNullOrWhiteSpace(context.Budget))
                         {
-                            <div class="grid-primary">@context.Budget</div>
+                            <strong>@context.Budget</strong>
                         }
                         else
                         {
-                            <select class="grid-select"
-                                    value="@(selection.Budget ?? string.Empty)"
-                                    @onchange="args => UpdateSelection(context.TransactionJournalId, budget: args.Value?.ToString())">
-                                <option value="">Select budget</option>
+                            <FluentSelect TOption="string"
+                                          SelectedOption="@(selection.Budget ?? string.Empty)"
+                                          SelectedOptionChanged="value => OnBudgetSelectionChanged(context.TransactionJournalId, value)">
+                                <FluentOption Value="@string.Empty">Select budget</FluentOption>
                                 @foreach (var budget in budgets)
                                 {
-                                    <option value="@budget">@budget</option>
+                                    <FluentOption Value="@budget">@budget</FluentOption>
                                 }
-                            </select>
+                            </FluentSelect>
 
                             @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Budget))
                             {
-                                <div class="grid-secondary">AI: @GetClassification(context.TransactionJournalId)?.Budget</div>
+                                <small>AI: @GetClassification(context.TransactionJournalId)?.Budget</small>
                             }
                         }
                     </TemplateColumn>
                     <TemplateColumn Title="Actions">
-                        <div class="grid-actions">
+                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="8" VerticalGap="8">
                             <FluentButton Appearance="Appearance.Stealth"
                                           Disabled="@pendingClassifications.Contains(context.TransactionJournalId)"
                                           @onclick="() => ClassifyAsync(context)">
@@ -153,31 +165,33 @@
                                           @onclick="() => ApplyAsync(context)">
                                 @(pendingUpdates.Contains(context.TransactionJournalId) ? "Applying..." : "Apply")
                             </FluentButton>
-                        </div>
+                        </FluentStack>
 
                         @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Error))
                         {
-                            <div class="grid-error">@GetClassification(context.TransactionJournalId)?.Error</div>
+                            <FluentMessageBar Intent="MessageIntent.Error">@GetClassification(context.TransactionJournalId)?.Error</FluentMessageBar>
                         }
                     </TemplateColumn>
                 </FluentDataGrid>
-            </div>
-        }
+                </div>
+            }
+        </FluentStack>
     </FluentCard>
 
-    <FluentCard Class="panel-card pagination-panel">
-        <div class="pagination-row">
+    <FluentCard>
+        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="8" VerticalGap="8">
             <FluentButton Appearance="Appearance.Stealth" Disabled="@(page <= 1)" @onclick="PreviousPageAsync">Previous</FluentButton>
-            <div class="page-list">
-                @foreach (var number in GetVisiblePages())
-                {
-                    <button class="page-button @(number == page ? "active" : string.Empty)" @onclick="() => GoToPageAsync(number)">@number</button>
-                }
-            </div>
+            @foreach (var number in GetVisiblePages())
+            {
+                <FluentButton Appearance="@(number == page ? Appearance.Accent : Appearance.Stealth)"
+                              @onclick="() => GoToPageAsync(number)">
+                    @number
+                </FluentButton>
+            }
             <FluentButton Appearance="Appearance.Stealth" Disabled="@(!CanMoveNext)" @onclick="NextPageAsync">Next</FluentButton>
-        </div>
+        </FluentStack>
     </FluentCard>
-</section>
+</FluentStack>
 
 @code {
     private readonly CancellationTokenSource disposeCts = new();
@@ -339,34 +353,43 @@
         }
     }
 
-    private async Task OnPageSizeChanged(ChangeEventArgs args)
+    private async Task OnPageSizeChanged(int args)
     {
-        if (int.TryParse(args.Value?.ToString(), out var newSize))
-        {
-            pageSize = newSize;
-            page = 1;
-            await LoadTransactionsAsync();
-        }
+        pageSize = args;
+        page = 1;
+        await LoadTransactionsAsync();
     }
 
-    private async Task OnDestinationChanged(ChangeEventArgs args)
+    private async Task OnDestinationChanged(string? args)
     {
-        selectedDestination = args.Value?.ToString() ?? string.Empty;
+        selectedDestination = args ?? string.Empty;
         bulkCategory = string.Empty;
         bulkBudget = string.Empty;
         page = 1;
         await RefreshAllAsync();
     }
 
-    private Task OnBulkCategoryChanged(ChangeEventArgs args)
+    private Task OnBulkCategoryChanged(string? args)
     {
-        bulkCategory = args.Value?.ToString() ?? string.Empty;
+        bulkCategory = args ?? string.Empty;
         return Task.CompletedTask;
     }
 
-    private Task OnBulkBudgetChanged(ChangeEventArgs args)
+    private Task OnBulkBudgetChanged(string? args)
     {
-        bulkBudget = args.Value?.ToString() ?? string.Empty;
+        bulkBudget = args ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task OnCategorySelectionChanged(string key, string? value)
+    {
+        UpdateSelection(key, category: value);
+        return Task.CompletedTask;
+    }
+
+    private Task OnBudgetSelectionChanged(string key, string? value)
+    {
+        UpdateSelection(key, budget: value);
         return Task.CompletedTask;
     }
 

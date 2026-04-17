@@ -1,12 +1,11 @@
-<FluentCard Class="panel-card">
-    <div class="section-header">
+<FluentCard>
+    <FluentStack VerticalGap="12">
         <div>
-            <div class="section-kicker">Bulk repair</div>
+            <small>Bulk repair</small>
             <h2>Apply one decision to the current destination</h2>
         </div>
-    </div>
 
-    <p class="muted-copy">
+        <p>
         @if (string.IsNullOrWhiteSpace(SelectedDestination))
         {
             <span>Select a destination first to bulk update matching transactions.</span>
@@ -15,37 +14,44 @@
         {
             <span>Bulk updates affect empty values for <strong>@SelectedDestination</strong>.</span>
         }
-    </p>
+        </p>
 
-    <div class="filters-grid">
-        <label>
-            <span>Bulk category</span>
-            <select value="@BulkCategory" @onchange="BulkCategoryChanged" disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
-                <option value="">Leave unchanged</option>
+        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="16" VerticalGap="16">
+            <FluentStack VerticalGap="6" Width="320px">
+                <FluentLabel>Bulk category</FluentLabel>
+                <FluentSelect TOption="string"
+                              SelectedOption="@BulkCategory"
+                              SelectedOptionChanged="BulkCategoryChanged"
+                              Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
+                <FluentOption Value="@string.Empty">Leave unchanged</FluentOption>
                 @foreach (var category in Categories)
                 {
-                    <option value="@category">@category</option>
+                    <FluentOption Value="@category">@category</FluentOption>
                 }
-            </select>
-        </label>
+                </FluentSelect>
+            </FluentStack>
 
-        <label>
-            <span>Bulk budget</span>
-            <select value="@BulkBudget" @onchange="BulkBudgetChanged" disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
-                <option value="">Leave unchanged</option>
+            <FluentStack VerticalGap="6" Width="320px">
+                <FluentLabel>Bulk budget</FluentLabel>
+                <FluentSelect TOption="string"
+                              SelectedOption="@BulkBudget"
+                              SelectedOptionChanged="BulkBudgetChanged"
+                              Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
+                <FluentOption Value="@string.Empty">Leave unchanged</FluentOption>
                 @foreach (var budget in Budgets)
                 {
-                    <option value="@budget">@budget</option>
+                    <FluentOption Value="@budget">@budget</FluentOption>
                 }
-            </select>
-        </label>
-    </div>
+                </FluentSelect>
+            </FluentStack>
+        </FluentStack>
 
-    <div class="hero-actions">
-        <FluentButton Appearance="Appearance.Accent" Disabled="@(!CanApply || IsPending)" @onclick="ApplyRequested">
-            @(IsPending ? "Applying..." : "Apply to filtered transactions")
-        </FluentButton>
-    </div>
+        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="12">
+            <FluentButton Appearance="Appearance.Accent" Disabled="@(!CanApply || IsPending)" @onclick="ApplyRequested">
+                @(IsPending ? "Applying..." : "Apply to filtered transactions")
+            </FluentButton>
+        </FluentStack>
+    </FluentStack>
 </FluentCard>
 
 @code {
@@ -71,10 +77,10 @@
     public bool IsPending { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<ChangeEventArgs> BulkCategoryChanged { get; set; }
+    public EventCallback<string?> BulkCategoryChanged { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<ChangeEventArgs> BulkBudgetChanged { get; set; }
+    public EventCallback<string?> BulkBudgetChanged { get; set; }
 
     [Parameter, EditorRequired]
     public EventCallback ApplyRequested { get; set; }

@@ -1,21 +1,21 @@
-<div class="summary-grid">
-    <FluentCard Class="summary-card">
-        <div class="summary-label">Transactions in view</div>
-        <div class="summary-value">@Summary.TotalTransactions</div>
+<FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="16" VerticalGap="16">
+    <FluentCard style="min-width: 180px;">
+        <div>Transactions in view</div>
+        <div><strong>@Summary.TotalTransactions</strong></div>
     </FluentCard>
-    <FluentCard Class="summary-card">
-        <div class="summary-label">Without category</div>
-        <div class="summary-value">@Summary.WithoutCategory</div>
+    <FluentCard style="min-width: 180px;">
+        <div>Without category</div>
+        <div><strong>@Summary.WithoutCategory</strong></div>
     </FluentCard>
-    <FluentCard Class="summary-card">
-        <div class="summary-label">Without budget</div>
-        <div class="summary-value">@Summary.WithoutBudget</div>
+    <FluentCard style="min-width: 180px;">
+        <div>Without budget</div>
+        <div><strong>@Summary.WithoutBudget</strong></div>
     </FluentCard>
-    <FluentCard Class="summary-card">
-        <div class="summary-label">Scan status</div>
-        <div class="summary-value small">@(MetadataComplete && PaginationComplete ? "Complete" : "Updating")</div>
+    <FluentCard style="min-width: 180px;">
+        <div>Scan status</div>
+        <div><strong>@(MetadataComplete && PaginationComplete ? "Complete" : "Updating")</strong></div>
     </FluentCard>
-</div>
+</FluentStack>
 
 @code {
     [Parameter, EditorRequired]

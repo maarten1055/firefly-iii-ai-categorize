@@ -1,20 +1,21 @@
-<FluentCard Class="panel-card">
-    <div class="section-header">
-        <div>
-            <div class="section-kicker">Queue activity</div>
-            <h2>Recent jobs</h2>
-        </div>
-        <div class="inline-status">Live server updates</div>
-    </div>
+<FluentCard>
+    <FluentStack VerticalGap="12">
+        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="12">
+            <div>
+                <small>Queue activity</small>
+                <h2>Recent jobs</h2>
+            </div>
+            <strong>Live server updates</strong>
+        </FluentStack>
 
-    @if (Jobs.Count == 0)
-    {
-        <p class="muted-copy">No jobs have been created yet.</p>
-    }
-    else
-    {
-        <FluentPaginator State="pagination" />
-        <div class="data-grid-shell">
+        @if (Jobs.Count == 0)
+        {
+            <p>No jobs have been created yet.</p>
+        }
+        else
+        {
+            <FluentPaginator State="pagination" />
+            <div style="overflow-x:auto;">
             <FluentDataGrid Items="Jobs.AsQueryable()"
                             Pagination="pagination"
                             AutoFit="true"
@@ -23,22 +24,28 @@
                             ShowHover="true"
                             TGridItem="JobRecord">
                 <TemplateColumn Title="Destination">
-                    <div class="grid-primary">@GetValue(context.Data.DestinationName, "Unknown destination")</div>
-                    <div class="grid-secondary">@context.Created.LocalDateTime.ToString("g")</div>
+                    <FluentStack VerticalGap="4">
+                        <strong>@GetValue(context.Data.DestinationName, "Unknown destination")</strong>
+                        <small>@context.Created.LocalDateTime.ToString("g")</small>
+                    </FluentStack>
                 </TemplateColumn>
                 <TemplateColumn Title="Status">
-                    <span class="status-pill @GetStatusCss(context.Status)">@GetStatusLabel(context.Status)</span>
+                    <span>@GetStatusLabel(context.Status)</span>
                 </TemplateColumn>
                 <TemplateColumn Title="Description">
-                    <div class="grid-primary">@GetValue(context.Data.Description, "No description")</div>
-                    <div class="grid-secondary">ID: @context.Id</div>
+                    <FluentStack VerticalGap="4">
+                        <strong>@GetValue(context.Data.Description, "No description")</strong>
+                        <small>ID: @context.Id</small>
+                    </FluentStack>
                 </TemplateColumn>
                 <TemplateColumn Title="Guess">
-                    <div class="grid-primary">Category: @GetValue(context.Data.Category, "Not set")</div>
-                    <div class="grid-secondary">Budget: @GetValue(context.Data.Budget, "Not set")</div>
+                    <FluentStack VerticalGap="4">
+                        <strong>Category: @GetValue(context.Data.Category, "Not set")</strong>
+                        <small>Budget: @GetValue(context.Data.Budget, "Not set")</small>
+                    </FluentStack>
                 </TemplateColumn>
                 <TemplateColumn Title="Actions">
-                    <div class="grid-actions">
+                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="8" VerticalGap="8">
                         <FluentButton Appearance="Appearance.Stealth" @onclick="() => ViewDetailsRequested.InvokeAsync(context)">Details</FluentButton>
                         @if (CanFillMissing(context))
                         {
@@ -48,12 +55,13 @@
                                 @(PendingFillJobIds.Contains(context.Id) ? "Updating..." : $"Fill {GetMissingField(context)}")
                             </FluentButton>
                         }
-                    </div>
+                    </FluentStack>
                 </TemplateColumn>
             </FluentDataGrid>
-        </div>
-        <FluentPaginator State="pagination" />
-    }
+            </div>
+            <FluentPaginator State="pagination" />
+        }
+    </FluentStack>
 </FluentCard>
 
 @code {
@@ -78,15 +86,6 @@
         "finished" => "Finished",
         "failed" => "Failed",
         _ => "Queued",
-    };
-
-    private static string GetStatusCss(string status) => status switch
-    {
-        "in_progress" => "in-progress",
-        "partial" => "partial",
-        "finished" => "ready",
-        "failed" => "failed",
-        _ => "queued",
     };
 
     private static bool CanFillMissing(JobRecord job)

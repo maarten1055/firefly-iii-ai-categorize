@@ -1,27 +1,29 @@
-<FluentCard Class="panel-card">
-    <div class="filters-grid">
-        <label>
-            <span>Rows per page</span>
-            <select value="@PageSize" @onchange="PageSizeChanged">
+<FluentCard>
+    <FluentStack VerticalGap="12">
+        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="16" VerticalGap="16">
+            <FluentStack VerticalGap="6" Width="320px">
+                <FluentLabel>Rows per page</FluentLabel>
+                <FluentSelect TOption="string" SelectedOption="@CurrentPageSize" SelectedOptionChanged="HandlePageSizeChanged">
                 @foreach (var size in PageSizeOptions)
                 {
-                    <option value="@size">@size</option>
+                    <FluentOption Value="@size.ToString()">@size.ToString()</FluentOption>
                 }
-            </select>
-        </label>
+                </FluentSelect>
+            </FluentStack>
 
-        <label>
-            <span>Destination</span>
-            <select value="@SelectedDestination" @onchange="DestinationChanged">
-                <option value="">All destinations</option>
+            <FluentStack VerticalGap="6" Width="320px">
+                <FluentLabel>Destination</FluentLabel>
+                <FluentSelect TOption="string" SelectedOption="@SelectedDestination" SelectedOptionChanged="DestinationChanged">
+                <FluentOption Value="@string.Empty">All destinations</FluentOption>
                 @foreach (var destination in Destinations)
                 {
-                    <option value="@destination">@destination</option>
+                    <FluentOption Value="@destination">@destination</FluentOption>
                 }
-            </select>
-        </label>
-    </div>
-    <p class="muted-copy">Page @(Page) of @(PaginationComplete ? TotalPages.ToString() : $"{TotalPages}+")</p>
+                </FluentSelect>
+            </FluentStack>
+        </FluentStack>
+        <p>Page @(Page) of @(PaginationComplete ? TotalPages.ToString() : $"{TotalPages}+")</p>
+    </FluentStack>
 </FluentCard>
 
 @code {
@@ -47,8 +49,17 @@
     public int TotalPages { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<ChangeEventArgs> PageSizeChanged { get; set; }
+    public EventCallback<int> PageSizeChanged { get; set; }
 
     [Parameter, EditorRequired]
-    public EventCallback<ChangeEventArgs> DestinationChanged { get; set; }
+    public EventCallback<string?> DestinationChanged { get; set; }
+
+    private string CurrentPageSize => PageSize.ToString();
+
+    private Task HandlePageSizeChanged(string? value)
+    {
+        return int.TryParse(value, out var pageSize)
+            ? PageSizeChanged.InvokeAsync(pageSize)
+            : Task.CompletedTask;
+    }
 }

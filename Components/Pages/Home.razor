@@ -5,21 +5,24 @@
 @inject AiClassifierService AiClassifierService
 @inject CategorizationCoordinator Coordinator
 @inject IDialogService DialogService
+@inject NavigationManager Navigation
 @inject IToastService ToastService
 
 <PageTitle>Dashboard</PageTitle>
 
-<section class="page-grid">
-    <FluentCard Class="hero-card">
-        <div class="hero-kicker">Operations dashboard</div>
-        <h1>Keep an eye on automation without leaving Firefly.</h1>
-        <p class="hero-copy">
-            Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.
-        </p>
-        <div class="hero-actions">
-            <FluentButton Appearance="Appearance.Accent" @onclick="RunDiagnosticsAsync">Run diagnostics</FluentButton>
-            <a href="/uncategorized" class="app-link-button">Review uncategorized transactions</a>
-        </div>
+<FluentStack VerticalGap="20">
+    <FluentCard>
+        <FluentStack VerticalGap="12">
+            <small>Operations dashboard</small>
+            <div>
+                <h1>Keep an eye on automation without leaving Firefly.</h1>
+                <p>Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.</p>
+            </div>
+            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
+                <FluentButton Appearance="Appearance.Accent" @onclick="RunDiagnosticsAsync">Run diagnostics</FluentButton>
+                <FluentButton Appearance="Appearance.Stealth" @onclick='() => Navigation.NavigateTo("/uncategorized")'>Review uncategorized transactions</FluentButton>
+            </FluentStack>
+        </FluentStack>
     </FluentCard>
 
     <StatusSummaryCards Jobs="jobs" />
@@ -33,7 +36,7 @@
                   PendingFillJobIds="pendingFillJobIds"
                   FillMissingRequested="PromptFillMissingAsync"
                   ViewDetailsRequested="ShowJobDetailsAsync" />
-</section>
+</FluentStack>
 
 @code {
     private readonly CancellationTokenSource disposeCts = new();

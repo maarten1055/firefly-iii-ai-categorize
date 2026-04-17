@@ -1,54 +1,59 @@
 @implements IDialogContentComponent<TransactionReviewDialogModel>
 
-<div class="dialog-stack">
-    <section class="dialog-block">
-        <h3>Transaction</h3>
-        <div class="dialog-kv">
-            <div class="kv-row"><span>Destination</span><strong>@(Content.Transaction.DestinationName ?? "Unknown destination")</strong></div>
-            <div class="kv-row"><span>Description</span><strong>@(Content.Transaction.Description ?? "No description")</strong></div>
-            <div class="kv-row"><span>Source</span><strong>@(Content.Transaction.SourceName ?? "Unknown source")</strong></div>
-            <div class="kv-row"><span>Amount</span><strong>@FormatAmount(Content.Transaction)</strong></div>
-            <div class="kv-row"><span>Current category</span><strong>@(Content.Transaction.Category ?? "Missing")</strong></div>
-            <div class="kv-row"><span>Current budget</span><strong>@(Content.Transaction.Budget ?? "Missing")</strong></div>
-        </div>
-    </section>
+<FluentStack VerticalGap="16">
+    <FluentCard>
+        <FluentStack VerticalGap="8">
+            <h3>Transaction</h3>
+            <FluentStack VerticalGap="6">
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Destination</span><strong>@(Content.Transaction.DestinationName ?? "Unknown destination")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Description</span><strong>@(Content.Transaction.Description ?? "No description")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Source</span><strong>@(Content.Transaction.SourceName ?? "Unknown source")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Amount</span><strong>@FormatAmount(Content.Transaction)</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Current category</span><strong>@(Content.Transaction.Category ?? "Missing")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Current budget</span><strong>@(Content.Transaction.Budget ?? "Missing")</strong></FluentStack>
+            </FluentStack>
+        </FluentStack>
+    </FluentCard>
 
-    <section class="dialog-block">
-        <h3>Selections and suggestions</h3>
-        <div class="dialog-kv">
-            <div class="kv-row"><span>Selected category</span><strong>@(Content.Selections.Category ?? "None")</strong></div>
-            <div class="kv-row"><span>Selected budget</span><strong>@(Content.Selections.Budget ?? "None")</strong></div>
-            <div class="kv-row"><span>AI status</span><strong>@(Content.Classification?.Status ?? "Not classified")</strong></div>
-            <div class="kv-row"><span>Suggested category</span><strong>@(Content.Classification?.Category ?? "No suggestion")</strong></div>
-            <div class="kv-row"><span>Suggested budget</span><strong>@(Content.Classification?.Budget ?? "No suggestion")</strong></div>
-            <div class="kv-row"><span>History used</span><strong>@(Content.Classification?.HistoryCount ?? 0)</strong></div>
-        </div>
-    </section>
+    <FluentCard>
+        <FluentStack VerticalGap="8">
+            <h3>Selections and suggestions</h3>
+            <FluentStack VerticalGap="6">
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Selected category</span><strong>@(Content.Selections.Category ?? "None")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Selected budget</span><strong>@(Content.Selections.Budget ?? "None")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>AI status</span><strong>@(Content.Classification?.Status ?? "Not classified")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Suggested category</span><strong>@(Content.Classification?.Category ?? "No suggestion")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Suggested budget</span><strong>@(Content.Classification?.Budget ?? "No suggestion")</strong></FluentStack>
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>History used</span><strong>@(Content.Classification?.HistoryCount ?? 0)</strong></FluentStack>
+            </FluentStack>
+        </FluentStack>
+    </FluentCard>
 
     @if (!string.IsNullOrWhiteSpace(Content.Classification?.Error))
     {
-        <section class="dialog-block">
-            <h3>Error</h3>
-            <div>@Content.Classification?.Error</div>
-        </section>
+        <FluentMessageBar Intent="MessageIntent.Error" Title="Error">@Content.Classification?.Error</FluentMessageBar>
     }
 
     @if (!string.IsNullOrWhiteSpace(Content.Classification?.Prompt))
     {
-        <section class="dialog-block">
-            <h3>Prompt</h3>
-            <pre>@Content.Classification?.Prompt</pre>
-        </section>
+        <FluentCard>
+            <FluentStack VerticalGap="8">
+                <h3>Prompt</h3>
+                <pre>@Content.Classification?.Prompt</pre>
+            </FluentStack>
+        </FluentCard>
     }
 
     @if (!string.IsNullOrWhiteSpace(Content.Classification?.Response))
     {
-        <section class="dialog-block">
-            <h3>Model response</h3>
-            <pre>@Content.Classification?.Response</pre>
-        </section>
+        <FluentCard>
+            <FluentStack VerticalGap="8">
+                <h3>Model response</h3>
+                <pre>@Content.Classification?.Response</pre>
+            </FluentStack>
+        </FluentCard>
     }
-</div>
+</FluentStack>
 
 @code {
     [Parameter]

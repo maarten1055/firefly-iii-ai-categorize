@@ -61,7 +61,6 @@ C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Deb
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\kwrall9b0s-{0}-zbg73p58hc-zbg73p58hc.gz
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\m3ffqup1h6-{0}-kz8gc8cxma-kz8gc8cxma.gz
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\3emkb5z5ma-{0}-sd59ooda5f-sd59ooda5f.gz
-C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\1437l4eqdj-{0}-jypzn1dm43-jypzn1dm43.gz
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\riq6kj50xl-{0}-uhfllo7vmv-uhfllo7vmv.gz
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\xvkxg8yqjh-{0}-b9228eflpl-b9228eflpl.gz
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\ji7eizz7vy-{0}-2tj1sjhksk-2tj1sjhksk.gz
@@ -78,3 +77,4 @@ C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Deb
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\FireflyCategorizer.pdb
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\FireflyCategorizer.genruntimeconfig.cache
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\ref\FireflyCategorizer.dll
+C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\1437l4eqdj-{0}-jgffpqysi5-jgffpqysi5.gz
