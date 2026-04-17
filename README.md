@@ -4,13 +4,11 @@ This project allows you to automatically categorize your expenses in [Firefly II
 using OpenAI or Mistral AI.
 
 
-## .NET backend
+## .NET application
 
-This repository now also contains a .NET rewrite of the backend in `FireflyCategorizer.DotNet/`.
+The repository now runs directly from the root .NET application.
 
-The root `Dockerfile` now builds that .NET backend by default, so the repository defaults to the C# implementation.
-
-The migration and startup guide lives in `FireflyCategorizer.DotNet/README.md`.
+The root `Dockerfile` builds that application by default.
 
 ### Docker Compose for .NET backend
 
@@ -54,12 +52,10 @@ docker run -d \
 firefly-iii-ai-categorize-dotnet
 ```
 
-If you want the full migration notes, `.env` setup, and local `dotnet run` commands, see `FireflyCategorizer.DotNet/README.md`.
-
-For local development, copy `FireflyCategorizer.DotNet/.env.example` to `FireflyCategorizer.DotNet/.env` and run:
+For local development, copy `.env.example` to `.env` and run:
 
 ```powershell
-dotnet run --project '.\FireflyCategorizer.DotNet\FireflyCategorizer.DotNet.csproj' --no-launch-profile
+dotnet run --project '.\FireflyCategorizer.csproj' --no-launch-profile
 ```
 
 ## How it works
@@ -111,7 +107,7 @@ When an API key is created you'll be able to copy the secret key and use it.
 
 ![OpenAI screenshot](docs/img/openai-key.png)
 
-Note: OpenAI currently provides 5$ free credits for 3 months which is great since you won’t have to provide your
+Note: OpenAI currently provides 5$ free credits for 3 months which is great since you won't have to provide your
 payment details to begin interacting with the API for the first time.
 
 After that you have to enable billing in your account.

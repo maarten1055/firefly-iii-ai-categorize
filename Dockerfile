@@ -1,11 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY FireflyCategorizer.DotNet/FireflyCategorizer.DotNet.csproj FireflyCategorizer.DotNet/
-RUN dotnet restore FireflyCategorizer.DotNet/FireflyCategorizer.DotNet.csproj
+COPY FireflyCategorizer.csproj ./
+RUN dotnet restore FireflyCategorizer.csproj
 
 COPY . .
-RUN dotnet publish FireflyCategorizer.DotNet/FireflyCategorizer.DotNet.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish FireflyCategorizer.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
@@ -15,4 +15,4 @@ EXPOSE 8080
 
 COPY --from=build /app/publish ./
 
-ENTRYPOINT ["dotnet", "FireflyCategorizer.DotNet.dll"]
+ENTRYPOINT ["dotnet", "FireflyCategorizer.dll"]
