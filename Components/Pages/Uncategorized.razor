@@ -12,17 +12,28 @@
 <FluentGrid Spacing="5">
     <FluentGridItem xs="12">
         <FluentCard>
-            <FluentStack VerticalGap="12">
-                <small>Review workspace</small>
-                <div>
-                    <h1>Transactions missing category or budget</h1>
-                    <p>Filter by destination, classify individual items, or apply one decision across a destination batch.</p>
-                </div>
-                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
-                    <FluentButton Appearance="Appearance.Stealth" @onclick='() => Navigation.NavigateTo("/")'>Back to dashboard</FluentButton>
-                    <FluentButton Appearance="Appearance.Accent" @onclick="RefreshAllAsync">Refresh</FluentButton>
-                </FluentStack>
-            </FluentStack>
+            <FluentGrid Spacing="4">
+                <FluentGridItem xs="12" lg="8">
+                    <FluentStack VerticalGap="12">
+                        <small>Review workspace</small>
+                        <div>
+                            <h1>Transactions missing category or budget</h1>
+                            <p>Filter by destination, classify individual items, or apply one decision across a destination batch.</p>
+                        </div>
+                    </FluentStack>
+                </FluentGridItem>
+
+                <FluentGridItem xs="12" lg="4">
+                    <FluentStack VerticalGap="10" HorizontalAlignment="HorizontalAlignment.Stretch">
+                        <FluentMessageBar Intent="MessageIntent.Info">Destination: @(string.IsNullOrWhiteSpace(selectedDestination) ? "All" : selectedDestination)</FluentMessageBar>
+                        <FluentMessageBar Intent="@(paginationComplete ? MessageIntent.Success : MessageIntent.Info)">Page @(page) of @(paginationComplete ? totalPages.ToString() : $"{totalPages}+")</FluentMessageBar>
+                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
+                            <FluentButton Appearance="Appearance.Outline" @onclick='() => Navigation.NavigateTo("/")'>Back to dashboard</FluentButton>
+                            <FluentButton Appearance="Appearance.Accent" @onclick="RefreshAllAsync">Refresh</FluentButton>
+                        </FluentStack>
+                    </FluentStack>
+                </FluentGridItem>
+            </FluentGrid>
         </FluentCard>
     </FluentGridItem>
 

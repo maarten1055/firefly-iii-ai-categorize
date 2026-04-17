@@ -8,19 +8,30 @@
 
 <div style="max-width: 1400px; margin: 0 auto; padding: 1.5rem;">
     <FluentStack VerticalGap="24">
-        <FluentStack VerticalGap="12">
-            <FluentStack VerticalGap="4">
-                <small>Blazor server console</small>
-                <strong style="font-size: 1.8rem;">Firefly III AI Categorizer</strong>
-            </FluentStack>
+        <FluentCard>
+            <FluentGrid Spacing="4">
+                <FluentGridItem xs="12" lg="8">
+                    <FluentStack VerticalGap="10">
+                        <FluentStack VerticalGap="4">
+                            <small>Blazor server console</small>
+                            <strong style="font-size: 1.8rem; line-height: 1.1;">Firefly III AI Categorizer</strong>
+                        </FluentStack>
 
-            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
-                <FluentButton Appearance="Appearance.Outline" Href="/">Dashboard</FluentButton>
-                <FluentButton Appearance="Appearance.Outline" Href="/uncategorized">Uncategorized</FluentButton>
-            </FluentStack>
+                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
+                            <FluentButton Appearance="Appearance.Accent" Href="/">Dashboard</FluentButton>
+                            <FluentButton Appearance="Appearance.Outline" Href="/uncategorized">Uncategorized</FluentButton>
+                        </FluentStack>
+                    </FluentStack>
+                </FluentGridItem>
 
-            <ThemeSwitcher @bind-Mode="themeMode" @bind-OfficeColor="themeColor" />
-        </FluentStack>
+                <FluentGridItem xs="12" lg="4">
+                    <FluentStack VerticalGap="8" HorizontalAlignment="HorizontalAlignment.End">
+                        <small>Theme</small>
+                        <ThemeSwitcher @bind-Mode="themeMode" @bind-OfficeColor="themeColor" />
+                    </FluentStack>
+                </FluentGridItem>
+            </FluentGrid>
+        </FluentCard>
 
         <main>
             @Body

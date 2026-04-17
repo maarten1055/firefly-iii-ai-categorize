@@ -25,18 +25,14 @@
             <FluentStack VerticalGap="12">
                 @foreach (var check in Checks)
                 {
-                    <FluentCard>
-                        <FluentStack VerticalGap="8">
-                            <FluentMessageBar Intent="@(check.Ok ? MessageIntent.Success : MessageIntent.Error)">@check.Name: @(check.Ok ? "OK" : "Failed")</FluentMessageBar>
-                            @foreach (var pair in check.Details)
-                            {
-                                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="4">
-                                    <span>@pair.Key</span>
-                                    <strong>@pair.Value</strong>
-                                </FluentStack>
-                            }
+                    <FluentMessageBar Intent="@(check.Ok ? MessageIntent.Success : MessageIntent.Error)">@check.Name: @(check.Ok ? "OK" : "Failed")</FluentMessageBar>
+                    @foreach (var pair in check.Details)
+                    {
+                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="4">
+                            <span>@pair.Key</span>
+                            <strong>@pair.Value</strong>
                         </FluentStack>
-                    </FluentCard>
+                    }
                 }
             </FluentStack>
         }

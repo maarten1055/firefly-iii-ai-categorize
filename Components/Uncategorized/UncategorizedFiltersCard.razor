@@ -1,28 +1,38 @@
 <FluentCard>
     <FluentStack VerticalGap="12">
-        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="16" VerticalGap="16">
-            <FluentStack VerticalGap="6" Width="320px">
-                <FluentLabel>Rows per page</FluentLabel>
-                <FluentSelect TOption="string" SelectedOption="@CurrentPageSize" SelectedOptionChanged="HandlePageSizeChanged">
-                @foreach (var size in PageSizeOptions)
-                {
-                    <FluentOption Value="@size.ToString()">@size.ToString()</FluentOption>
-                }
-                </FluentSelect>
-            </FluentStack>
+        <div>
+            <small>Filters</small>
+            <h2>Focus the review list</h2>
+        </div>
 
-            <FluentStack VerticalGap="6" Width="320px">
-                <FluentLabel>Destination</FluentLabel>
-                <FluentSelect TOption="string" SelectedOption="@SelectedDestination" SelectedOptionChanged="DestinationChanged">
-                <FluentOption Value="@string.Empty">All destinations</FluentOption>
-                @foreach (var destination in Destinations)
-                {
-                    <FluentOption Value="@destination">@destination</FluentOption>
-                }
-                </FluentSelect>
-            </FluentStack>
-        </FluentStack>
-        <p>Page @(Page) of @(PaginationComplete ? TotalPages.ToString() : $"{TotalPages}+")</p>
+        <FluentGrid Spacing="4">
+            <FluentGridItem xs="12" md="6">
+                <FluentStack VerticalGap="6">
+                    <FluentLabel>Rows per page</FluentLabel>
+                    <FluentSelect TOption="string" SelectedOption="@CurrentPageSize" SelectedOptionChanged="HandlePageSizeChanged">
+                    @foreach (var size in PageSizeOptions)
+                    {
+                        <FluentOption Value="@size.ToString()">@size.ToString()</FluentOption>
+                    }
+                    </FluentSelect>
+                </FluentStack>
+            </FluentGridItem>
+
+            <FluentGridItem xs="12" md="6">
+                <FluentStack VerticalGap="6">
+                    <FluentLabel>Destination</FluentLabel>
+                    <FluentSelect TOption="string" SelectedOption="@SelectedDestination" SelectedOptionChanged="DestinationChanged">
+                    <FluentOption Value="@string.Empty">All destinations</FluentOption>
+                    @foreach (var destination in Destinations)
+                    {
+                        <FluentOption Value="@destination">@destination</FluentOption>
+                    }
+                    </FluentSelect>
+                </FluentStack>
+            </FluentGridItem>
+        </FluentGrid>
+
+        <FluentMessageBar Intent="@(PaginationComplete ? MessageIntent.Success : MessageIntent.Info)">Page @(Page) of @(PaginationComplete ? TotalPages.ToString() : $"{TotalPages}+")</FluentMessageBar>
     </FluentStack>
 </FluentCard>
 

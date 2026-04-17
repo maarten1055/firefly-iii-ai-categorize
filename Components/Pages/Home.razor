@@ -13,17 +13,27 @@
 <FluentGrid Spacing="5">
     <FluentGridItem xs="12">
         <FluentCard>
-            <FluentStack VerticalGap="12">
-                <small>Operations dashboard</small>
-                <div>
-                    <h1>Keep an eye on automation without leaving Firefly.</h1>
-                    <p>Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.</p>
-                </div>
-                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
-                    <FluentButton Appearance="Appearance.Accent" @onclick="RunDiagnosticsAsync">Run diagnostics</FluentButton>
-                    <FluentButton Appearance="Appearance.Stealth" @onclick='() => Navigation.NavigateTo("/uncategorized")'>Review uncategorized transactions</FluentButton>
-                </FluentStack>
-            </FluentStack>
+            <FluentGrid Spacing="4">
+                <FluentGridItem xs="12" lg="8">
+                    <FluentStack VerticalGap="12">
+                        <small>Operations dashboard</small>
+                        <div>
+                            <h1>Keep an eye on automation without leaving Firefly.</h1>
+                            <p>Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.</p>
+                        </div>
+                    </FluentStack>
+                </FluentGridItem>
+
+                <FluentGridItem xs="12" lg="4">
+                    <FluentStack VerticalGap="10" HorizontalAlignment="HorizontalAlignment.Stretch">
+                        <FluentMessageBar Intent="MessageIntent.Info">Queued: @GetStatusCount("queued") | In progress: @GetStatusCount("in_progress")</FluentMessageBar>
+                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
+                            <FluentButton Appearance="Appearance.Accent" @onclick="RunDiagnosticsAsync">Run diagnostics</FluentButton>
+                            <FluentButton Appearance="Appearance.Outline" @onclick='() => Navigation.NavigateTo("/uncategorized")'>Review uncategorized</FluentButton>
+                        </FluentStack>
+                    </FluentStack>
+                </FluentGridItem>
+            </FluentGrid>
         </FluentCard>
     </FluentGridItem>
 
@@ -191,4 +201,6 @@
         disposeCts.Cancel();
         disposeCts.Dispose();
     }
+
+    private int GetStatusCount(string status) => jobs.Count(job => string.Equals(job.Status, status, StringComparison.Ordinal));
 }

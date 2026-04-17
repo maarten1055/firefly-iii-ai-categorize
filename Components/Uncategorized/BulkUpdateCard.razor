@@ -16,35 +16,39 @@
         }
         </p>
 
-        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="16" VerticalGap="16">
-            <FluentStack VerticalGap="6" Width="320px">
-                <FluentLabel>Bulk category</FluentLabel>
-                <FluentSelect TOption="string"
-                              SelectedOption="@BulkCategory"
-                              SelectedOptionChanged="BulkCategoryChanged"
-                              Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
-                <FluentOption Value="@string.Empty">Leave unchanged</FluentOption>
-                @foreach (var category in Categories)
-                {
-                    <FluentOption Value="@category">@category</FluentOption>
-                }
-                </FluentSelect>
-            </FluentStack>
+        <FluentGrid Spacing="4">
+            <FluentGridItem xs="12" md="6">
+                <FluentStack VerticalGap="6">
+                    <FluentLabel>Bulk category</FluentLabel>
+                    <FluentSelect TOption="string"
+                                  SelectedOption="@BulkCategory"
+                                  SelectedOptionChanged="BulkCategoryChanged"
+                                  Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
+                    <FluentOption Value="@string.Empty">Leave unchanged</FluentOption>
+                    @foreach (var category in Categories)
+                    {
+                        <FluentOption Value="@category">@category</FluentOption>
+                    }
+                    </FluentSelect>
+                </FluentStack>
+            </FluentGridItem>
 
-            <FluentStack VerticalGap="6" Width="320px">
-                <FluentLabel>Bulk budget</FluentLabel>
-                <FluentSelect TOption="string"
-                              SelectedOption="@BulkBudget"
-                              SelectedOptionChanged="BulkBudgetChanged"
-                              Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
-                <FluentOption Value="@string.Empty">Leave unchanged</FluentOption>
-                @foreach (var budget in Budgets)
-                {
-                    <FluentOption Value="@budget">@budget</FluentOption>
-                }
-                </FluentSelect>
-            </FluentStack>
-        </FluentStack>
+            <FluentGridItem xs="12" md="6">
+                <FluentStack VerticalGap="6">
+                    <FluentLabel>Bulk budget</FluentLabel>
+                    <FluentSelect TOption="string"
+                                  SelectedOption="@BulkBudget"
+                                  SelectedOptionChanged="BulkBudgetChanged"
+                                  Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
+                    <FluentOption Value="@string.Empty">Leave unchanged</FluentOption>
+                    @foreach (var budget in Budgets)
+                    {
+                        <FluentOption Value="@budget">@budget</FluentOption>
+                    }
+                    </FluentSelect>
+                </FluentStack>
+            </FluentGridItem>
+        </FluentGrid>
 
         <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="12">
             <FluentButton Appearance="Appearance.Accent" Disabled="@(!CanApply || IsPending)" @onclick="ApplyRequested">
