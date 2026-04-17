@@ -2,7 +2,7 @@
 
 This project is the ASP.NET Core rewrite of the original JavaScript backend.
 
-It keeps the same main API shape, serves the UI from `wwwroot/`, and uses SignalR for live job updates.
+It keeps the same main API shape and now serves a Blazor Server frontend built with Fluent UI.
 
 ## Required environment variables
 
@@ -16,7 +16,7 @@ You also need one AI provider:
 
 ## Optional environment variables
 
-- `ENABLE_UI=true`: serves `index.html` and `uncategorized.html`
+- `ENABLE_UI=true`: serves the Blazor Server UI at `/` and `/uncategorized`
 - `FIREFLY_TAG`: tag added to updated transactions, default `AI categorized`
 - `MISTRAL_MODEL`: default `mistral-small-latest`
 - `OPENAI_MODEL`: default `gpt-4o-mini`
@@ -95,8 +95,9 @@ services:
 
 ## Migration notes from the JavaScript backend
 
-- The .NET app serves the frontend directly from `FireflyCategorizer.DotNet/wwwroot/`.
-- Realtime job updates use SignalR at `/hubs/jobs` instead of Socket.IO.
+- The .NET frontend now lives in `Components/` and is rendered as a Blazor Server app.
+- Fluent UI Blazor components provide the shell, cards, and actions for the operator console.
+- The backend still exposes SignalR at `/hubs/jobs`, but the Blazor UI updates directly on the server side through shared services.
 - The dashboard root `/` only serves the UI when `ENABLE_UI=true`.
 - If both `MISTRAL_API_KEY` and `OPENAI_API_KEY` are set, Mistral is used first.
 - The root `Dockerfile` targets the .NET backend now.

@@ -1,0 +1,23 @@
+@inherits LayoutComponentBase
+
+<FluentDesignTheme StorageName="firefly-theme" OfficeColor="OfficeColor.Excel" />
+
+<div class="shell">
+    <header class="shell-header">
+        <div>
+            <div class="shell-kicker">Blazor server console</div>
+            <div class="shell-title">Firefly III AI Categorizer</div>
+        </div>
+        <nav class="shell-nav">
+            <NavLink href="/" Match="NavLinkMatch.All" class="shell-nav-link">Dashboard</NavLink>
+            <NavLink href="/uncategorized" class="shell-nav-link">Uncategorized</NavLink>
+        </nav>
+    </header>
+
+    <main class="shell-content">
+        @Body
+    </main>
+    <footer class="shell-footer">
+        <span>Server-rendered with Blazor and Fluent UI.</span>
+    </footer>
+</div>

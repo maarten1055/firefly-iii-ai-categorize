@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "o66sU/9azPg=",
+  "dgSpecHash": "YD5G+m/G6TQ=",
   "success": true,
   "projectFilePath": "c:\\Users\\maarteng\\projecten\\FireflyIII_AI_tool\\firefly-iii-ai-categorize\\FireflyCategorizer.DotNet\\FireflyCategorizer.DotNet.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\maarteng\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.5\\microsoft.aspnetcore.app.internal.assets.10.0.5.nupkg.sha512",
+    "C:\\Users\\maarteng\\.nuget\\packages\\microsoft.fluentui.aspnetcore.components\\4.14.0\\microsoft.fluentui.aspnetcore.components.4.14.0.nupkg.sha512"
+  ],
   "logs": []
 }

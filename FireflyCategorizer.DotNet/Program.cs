@@ -1,6 +1,7 @@
 using FireflyCategorizer.DotNet.Hubs;
 using FireflyCategorizer.DotNet.Models;
 using FireflyCategorizer.DotNet.Services;
+using Microsoft.FluentUI.AspNetCore.Components;
 
 LoadDotEnv(
 	Directory.GetCurrentDirectory(),
@@ -11,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 LoadDotEnv(builder.Environment.ContentRootPath, Directory.GetCurrentDirectory());
 builder.Configuration.AddEnvironmentVariables();
+builder.Services.AddRazorComponents()
+	.AddInteractiveServerComponents();
+builder.Services.AddFluentUIComponents();
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
 	options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
@@ -27,20 +31,24 @@ builder.Services.AddSingleton<CategorizationCoordinator>();
 var app = builder.Build();
 
 var enableUi = string.Equals(app.Configuration["ENABLE_UI"], "true", StringComparison.OrdinalIgnoreCase);
-if (enableUi)
-{
-	app.UseDefaultFiles();
-	app.UseStaticFiles();
-}
+
+app.UseStaticFiles();
+app.UseAntiforgery();
 
 app.MapHub<JobsHub>("/hubs/jobs");
 
-app.MapGet("/", () =>
+if (enableUi)
 {
-	return enableUi
-		? Results.Redirect("/index.html")
-		: Results.Text("Web UI is disabled. Set ENABLE_UI=true and restart the application to serve the UI at /.");
-});
+	app.MapGet("/index.html", () => Results.Redirect("/", permanent: false));
+	app.MapGet("/uncategorized.html", () => Results.Redirect("/uncategorized", permanent: false));
+	app.MapRazorComponents<FireflyCategorizer.DotNet.Components.App>()
+		.AddInteractiveServerRenderMode();
+}
+else
+{
+	app.MapGet("/", () => Results.Text("Web UI is disabled. Set ENABLE_UI=true and restart the application to serve the UI at /."));
+	app.MapGet("/uncategorized", () => Results.Text("Web UI is disabled. Set ENABLE_UI=true and restart the application to serve the UI at /."));
+}
 
 app.MapGet("/api/diagnostics", async (FireflyService fireflyService, AiClassifierService aiClassifierService, CancellationToken cancellationToken) =>
 {

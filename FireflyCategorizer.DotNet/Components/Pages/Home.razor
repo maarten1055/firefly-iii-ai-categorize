@@ -1,0 +1,292 @@
+@page "/"
+@implements IDisposable
+@inject JobStore JobStore
+@inject FireflyService FireflyService
+@inject AiClassifierService AiClassifierService
+@inject CategorizationCoordinator Coordinator
+
+<PageTitle>Dashboard</PageTitle>
+
+<section class="page-grid">
+    <FluentCard Class="hero-card">
+        <div class="hero-kicker">Operations dashboard</div>
+        <h1>Keep an eye on automation without leaving Firefly.</h1>
+        <p class="hero-copy">
+            Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.
+        </p>
+        <div class="hero-actions">
+            <FluentButton Appearance="Appearance.Accent" @onclick="RunDiagnosticsAsync">Run diagnostics</FluentButton>
+            <a href="/uncategorized" class="app-link-button">Review uncategorized transactions</a>
+        </div>
+    </FluentCard>
+
+    <div class="summary-grid">
+        <FluentCard Class="summary-card">
+            <div class="summary-label">Queued</div>
+            <div class="summary-value">@GetStatusCount("queued")</div>
+        </FluentCard>
+        <FluentCard Class="summary-card">
+            <div class="summary-label">In progress</div>
+            <div class="summary-value">@GetStatusCount("in_progress")</div>
+        </FluentCard>
+        <FluentCard Class="summary-card">
+            <div class="summary-label">Partial or failed</div>
+            <div class="summary-value">@(GetStatusCount("partial") + GetStatusCount("failed"))</div>
+        </FluentCard>
+        <FluentCard Class="summary-card">
+            <div class="summary-label">Finished</div>
+            <div class="summary-value">@GetStatusCount("finished")</div>
+        </FluentCard>
+    </div>
+
+    <FluentCard Class="panel-card">
+        <div class="section-header">
+            <div>
+                <div class="section-kicker">System check</div>
+                <h2>Provider health</h2>
+            </div>
+            @if (diagnosticsRunning)
+            {
+                <div class="inline-status">Running checks...</div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(diagnosticsError))
+        {
+            <div class="message-box error">@diagnosticsError</div>
+        }
+
+        @if (diagnosticChecks.Count == 0 && string.IsNullOrWhiteSpace(diagnosticsError))
+        {
+            <p class="muted-copy">Run a live check against Firefly III and your configured AI provider.</p>
+        }
+        else
+        {
+            <div class="diagnostics-grid">
+                @foreach (var check in diagnosticChecks)
+                {
+                    <article class="diagnostic-item @(check.Ok ? "ok" : "error")">
+                        <div class="diagnostic-title-row">
+                            <strong>@check.Name</strong>
+                            <span class="status-pill @(check.Ok ? "ready" : "failed")">@(check.Ok ? "OK" : "Failed")</span>
+                        </div>
+                        @foreach (var pair in check.Details)
+                        {
+                            <div class="kv-row">
+                                <span>@pair.Key</span>
+                                <strong>@pair.Value</strong>
+                            </div>
+                        }
+                    </article>
+                }
+            </div>
+        }
+    </FluentCard>
+
+    <FluentCard Class="panel-card">
+        <div class="section-header">
+            <div>
+                <div class="section-kicker">Queue activity</div>
+                <h2>Recent jobs</h2>
+            </div>
+            <div class="inline-status">Live server updates</div>
+        </div>
+
+        @if (jobs.Count == 0)
+        {
+            <p class="muted-copy">No jobs have been created yet.</p>
+        }
+        else
+        {
+            <div class="job-list">
+                @foreach (var job in jobs)
+                {
+                    <FluentCard Class="job-card">
+                        <div class="job-head">
+                            <div>
+                                <div class="job-title">@GetValue(job.Data.DestinationName, "Unknown destination")</div>
+                                <div class="job-meta">@job.Created.LocalDateTime.ToString("g")</div>
+                            </div>
+                            <span class="status-pill @GetStatusCss(job.Status)">@GetStatusLabel(job.Status)</span>
+                        </div>
+
+                        <div class="job-body">
+                            <div class="kv-row"><span>ID</span><strong>@job.Id</strong></div>
+                            <div class="kv-row"><span>Description</span><strong>@GetValue(job.Data.Description, "No description")</strong></div>
+                            <div class="kv-row"><span>Guessed category</span><strong>@GetValue(job.Data.Category, "Not set")</strong></div>
+                            <div class="kv-row"><span>Guessed budget</span><strong>@GetValue(job.Data.Budget, "Not set")</strong></div>
+                        </div>
+
+                        @if (CanFillMissing(job))
+                        {
+                            <div class="job-actions">
+                                <span class="muted-copy">Only the @GetMissingField(job) is still missing.</span>
+                                <FluentButton Appearance="Appearance.Accent"
+                                              Disabled="@pendingFillJobIds.Contains(job.Id)"
+                                              @onclick="() => FillMissingAsync(job.Id)">
+                                    @(pendingFillJobIds.Contains(job.Id) ? "Updating..." : $"Fill missing {GetMissingField(job)}")
+                                </FluentButton>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(job.Data.ManualUpdate))
+                        {
+                            <div class="message-box success">@job.Data.ManualUpdate</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(job.Data.Error))
+                        {
+                            <div class="message-box error">@job.Data.Error</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(job.Data.Prompt))
+                        {
+                            <details>
+                                <summary>Prompt</summary>
+                                <pre>@job.Data.Prompt</pre>
+                            </details>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(job.Data.Response))
+                        {
+                            <details>
+                                <summary>Model response</summary>
+                                <pre>@job.Data.Response</pre>
+                            </details>
+                        }
+                    </FluentCard>
+                }
+            </div>
+        }
+    </FluentCard>
+</section>
+
+@code {
+    private readonly CancellationTokenSource disposeCts = new();
+    private readonly HashSet<string> pendingFillJobIds = [];
+    private List<JobRecord> jobs = [];
+    private List<DiagnosticCheck> diagnosticChecks = [];
+    private bool diagnosticsRunning;
+    private string? diagnosticsError;
+
+    protected override void OnInitialized()
+    {
+        jobs = JobStore.GetJobsSnapshot().ToList();
+        JobStore.Changed += HandleJobsChanged;
+    }
+
+    private void HandleJobsChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            jobs = JobStore.GetJobsSnapshot().ToList();
+            StateHasChanged();
+        });
+    }
+
+    private async Task RunDiagnosticsAsync()
+    {
+        diagnosticsRunning = true;
+        diagnosticsError = null;
+
+        try
+        {
+            diagnosticChecks =
+            [
+                await BuildDiagnosticCheckAsync("Firefly III", () => FireflyService.DiagnoseAsync(disposeCts.Token)),
+                await BuildDiagnosticCheckAsync("AI provider", () => AiClassifierService.DiagnoseAsync(disposeCts.Token)),
+            ];
+        }
+        catch (Exception exception)
+        {
+            diagnosticsError = exception.Message;
+        }
+        finally
+        {
+            diagnosticsRunning = false;
+        }
+    }
+
+    private async Task<DiagnosticCheck> BuildDiagnosticCheckAsync(string name, Func<Task<object>> action)
+    {
+        try
+        {
+            var result = await action();
+            return new DiagnosticCheck(name, true, Describe(result));
+        }
+        catch (Exception exception)
+        {
+            return new DiagnosticCheck(name, false, new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Error"] = exception.Message,
+            });
+        }
+    }
+
+    private async Task FillMissingAsync(string jobId)
+    {
+        if (!pendingFillJobIds.Add(jobId))
+        {
+            return;
+        }
+
+        try
+        {
+            await Coordinator.FillMissingJobValueAsync(jobId, disposeCts.Token);
+        }
+        finally
+        {
+            pendingFillJobIds.Remove(jobId);
+        }
+    }
+
+    private int GetStatusCount(string status) => jobs.Count(job => string.Equals(job.Status, status, StringComparison.Ordinal));
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "in_progress" => "In progress",
+        "partial" => "Partial",
+        "finished" => "Finished",
+        "failed" => "Failed",
+        _ => "Queued",
+    };
+
+    private static string GetStatusCss(string status) => status switch
+    {
+        "in_progress" => "in-progress",
+        "partial" => "partial",
+        "finished" => "ready",
+        "failed" => "failed",
+        _ => "queued",
+    };
+
+    private static bool CanFillMissing(JobRecord job)
+    {
+        var hasCategory = !string.IsNullOrWhiteSpace(job.Data.Category);
+        var hasBudget = !string.IsNullOrWhiteSpace(job.Data.Budget);
+        return job.Status == "partial" && hasCategory != hasBudget;
+    }
+
+    private static string GetMissingField(JobRecord job) => string.IsNullOrWhiteSpace(job.Data.Category) ? "category" : "budget";
+
+    private static string GetValue(string? value, string fallback) => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private static Dictionary<string, string> Describe(object value)
+    {
+        return value.GetType()
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .ToDictionary(
+                property => property.Name,
+                property => Convert.ToString(property.GetValue(value), System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
+                StringComparer.Ordinal);
+    }
+
+    public void Dispose()
+    {
+        JobStore.Changed -= HandleJobsChanged;
+        disposeCts.Cancel();
+        disposeCts.Dispose();
+    }
+
+    private sealed record DiagnosticCheck(string Name, bool Ok, Dictionary<string, string> Details);
+}

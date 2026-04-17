@@ -190,8 +190,8 @@ Now you are ready and every new withdrawal transaction should be automatically c
 
 ## User Interface
 
-The application comes with a minimal UI that allows you to monitor the classification queue and see the OpenAI prompts
-and responses. This UI is disabled by default.
+The application comes with a Blazor Server UI built with Fluent UI. It lets you monitor the classification queue,
+inspect AI prompts and responses, and review uncategorized transactions. This UI is disabled by default.
 
 To enable this UI set the environment variable `ENABLE_UI` to `true`.
 

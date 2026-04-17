@@ -1,0 +1,686 @@
+@page "/uncategorized"
+@implements IAsyncDisposable
+@inject FireflyService FireflyService
+@inject CategorizationCoordinator Coordinator
+@inject ILogger<Uncategorized> Logger
+
+<PageTitle>Uncategorized Transactions</PageTitle>
+
+<section class="page-grid">
+    <FluentCard Class="hero-card compact">
+        <div class="hero-kicker">Review workspace</div>
+        <h1>Transactions missing category or budget</h1>
+        <p class="hero-copy">Filter by destination, classify individual items, or apply one decision across a destination batch.</p>
+        <div class="hero-actions">
+            <a href="/" class="app-link-button subtle">Back to dashboard</a>
+            <FluentButton Appearance="Appearance.Accent" @onclick="RefreshAllAsync">Refresh</FluentButton>
+        </div>
+    </FluentCard>
+
+    @if (!string.IsNullOrWhiteSpace(pageError))
+    {
+        <div class="message-box error">@pageError</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(pageSuccess))
+    {
+        <div class="message-box success">@pageSuccess</div>
+    }
+
+    <div class="summary-grid">
+        <FluentCard Class="summary-card">
+            <div class="summary-label">Transactions in view</div>
+            <div class="summary-value">@summary.TotalTransactions</div>
+        </FluentCard>
+        <FluentCard Class="summary-card">
+            <div class="summary-label">Without category</div>
+            <div class="summary-value">@summary.WithoutCategory</div>
+        </FluentCard>
+        <FluentCard Class="summary-card">
+            <div class="summary-label">Without budget</div>
+            <div class="summary-value">@summary.WithoutBudget</div>
+        </FluentCard>
+        <FluentCard Class="summary-card">
+            <div class="summary-label">Scan status</div>
+            <div class="summary-value small">@(metadataComplete && paginationComplete ? "Complete" : "Updating")</div>
+        </FluentCard>
+    </div>
+
+    <FluentCard Class="panel-card">
+        <div class="filters-grid">
+            <label>
+                <span>Rows per page</span>
+                <select value="@pageSize" @onchange="OnPageSizeChanged">
+                    @foreach (var size in pageSizeOptions)
+                    {
+                        <option value="@size">@size</option>
+                    }
+                </select>
+            </label>
+
+            <label>
+                <span>Destination</span>
+                <select value="@selectedDestination" @onchange="OnDestinationChanged">
+                    <option value="">All destinations</option>
+                    @foreach (var destination in destinations)
+                    {
+                        <option value="@destination">@destination</option>
+                    }
+                </select>
+            </label>
+        </div>
+        <p class="muted-copy">Page @(page) of @(paginationComplete ? totalPages.ToString() : $"{totalPages}+")</p>
+    </FluentCard>
+
+    <FluentCard Class="panel-card">
+        <div class="section-header">
+            <div>
+                <div class="section-kicker">Bulk repair</div>
+                <h2>Apply one decision to the current destination</h2>
+            </div>
+        </div>
+
+        <p class="muted-copy">
+            @if (string.IsNullOrWhiteSpace(selectedDestination))
+            {
+                <span>Select a destination first to bulk update matching transactions.</span>
+            }
+            else
+            {
+                <span>Bulk updates affect empty values for <strong>@selectedDestination</strong>.</span>
+            }
+        </p>
+
+        <div class="filters-grid">
+            <label>
+                <span>Bulk category</span>
+                <select value="@bulkCategory" @onchange="OnBulkCategoryChanged" disabled="@string.IsNullOrWhiteSpace(selectedDestination)">
+                    <option value="">Leave unchanged</option>
+                    @foreach (var category in categories)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </label>
+
+            <label>
+                <span>Bulk budget</span>
+                <select value="@bulkBudget" @onchange="OnBulkBudgetChanged" disabled="@string.IsNullOrWhiteSpace(selectedDestination)">
+                    <option value="">Leave unchanged</option>
+                    @foreach (var budget in budgets)
+                    {
+                        <option value="@budget">@budget</option>
+                    }
+                </select>
+            </label>
+        </div>
+
+        <div class="hero-actions">
+            <FluentButton Appearance="Appearance.Accent" Disabled="@(!CanBulkApply || bulkApplyPending)" @onclick="ApplyBulkAsync">
+                @(bulkApplyPending ? "Applying..." : "Apply to filtered transactions")
+            </FluentButton>
+        </div>
+    </FluentCard>
+
+    <div class="job-list">
+        @if (items.Count == 0 && string.IsNullOrWhiteSpace(pageError))
+        {
+            <FluentCard Class="panel-card">
+                <p class="muted-copy">No transactions match the current filter.</p>
+            </FluentCard>
+        }
+        else
+        {
+            @foreach (var transaction in items)
+            {
+                var classification = GetClassification(transaction.TransactionJournalId);
+                var selection = GetSelection(transaction.TransactionJournalId);
+                <FluentCard Class="@($"transaction-card {GetTransactionCss(transaction)}")">
+                    <div class="job-head">
+                        <div>
+                            <div class="job-title">@GetDisplay(transaction.DestinationName, "Unknown destination")</div>
+                            <div class="job-meta">@GetDisplay(transaction.Date, "No date")</div>
+                        </div>
+                        <span class="status-pill @GetTransactionCss(transaction)">@GetTransactionStatus(transaction)</span>
+                    </div>
+
+                    <div class="job-body">
+                        <div class="kv-row"><span>Description</span><strong>@GetDisplay(transaction.Description, "No description")</strong></div>
+                        <div class="kv-row"><span>Source</span><strong>@GetDisplay(transaction.SourceName, "Unknown source")</strong></div>
+                        <div class="kv-row"><span>Amount</span><strong>@FormatAmount(transaction)</strong></div>
+                        <div class="kv-row"><span>Current category</span><strong>@GetDisplay(transaction.Category, "Missing")</strong></div>
+                        <div class="kv-row"><span>Current budget</span><strong>@GetDisplay(transaction.Budget, "Missing")</strong></div>
+                    </div>
+
+                    @if (classification is not null && !string.IsNullOrWhiteSpace(classification.Error))
+                    {
+                        <div class="message-box error">@classification.Error</div>
+                    }
+
+                    <div class="filters-grid transaction-controls">
+                        <label>
+                            <span>Category</span>
+                            <select value="@(selection.Category ?? string.Empty)"
+                                    @onchange="args => UpdateSelection(transaction.TransactionJournalId, category: args.Value?.ToString())"
+                                    disabled="@(transaction.Category is not null)">
+                                <option value="">@(transaction.Category is not null ? transaction.Category : "Select category")</option>
+                                @foreach (var category in categories)
+                                {
+                                    <option value="@category">@category</option>
+                                }
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>Budget</span>
+                            <select value="@(selection.Budget ?? string.Empty)"
+                                    @onchange="args => UpdateSelection(transaction.TransactionJournalId, budget: args.Value?.ToString())"
+                                    disabled="@(transaction.Budget is not null)">
+                                <option value="">@(transaction.Budget is not null ? transaction.Budget : "Select budget")</option>
+                                @foreach (var budget in budgets)
+                                {
+                                    <option value="@budget">@budget</option>
+                                }
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="hero-actions">
+                        <FluentButton Appearance="Appearance.Stealth"
+                                      Disabled="@pendingClassifications.Contains(transaction.TransactionJournalId)"
+                                      @onclick="() => ClassifyAsync(transaction)">
+                            @(pendingClassifications.Contains(transaction.TransactionJournalId) ? "Classifying..." : "Ask AI")
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Accent"
+                                      Disabled="@(!CanApply(transaction) || pendingUpdates.Contains(transaction.TransactionJournalId))"
+                                      @onclick="() => ApplyAsync(transaction)">
+                            @(pendingUpdates.Contains(transaction.TransactionJournalId) ? "Applying..." : "Apply")
+                        </FluentButton>
+                    </div>
+
+                    @if (classification is not null)
+                    {
+                        <div class="suggestion-block">
+                            <div class="kv-row"><span>AI status</span><strong>@classification.Status</strong></div>
+                            <div class="kv-row"><span>Suggested category</span><strong>@GetDisplay(classification.Category, "No suggestion")</strong></div>
+                            <div class="kv-row"><span>Suggested budget</span><strong>@GetDisplay(classification.Budget, "No suggestion")</strong></div>
+                            <div class="kv-row"><span>History used</span><strong>@classification.HistoryCount</strong></div>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(classification.Prompt))
+                        {
+                            <details>
+                                <summary>Prompt</summary>
+                                <pre>@classification.Prompt</pre>
+                            </details>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(classification.Response))
+                        {
+                            <details>
+                                <summary>Model response</summary>
+                                <pre>@classification.Response</pre>
+                            </details>
+                        }
+                    }
+                </FluentCard>
+            }
+        }
+    </div>
+
+    <FluentCard Class="panel-card pagination-panel">
+        <div class="pagination-row">
+            <FluentButton Appearance="Appearance.Stealth" Disabled="@(page <= 1)" @onclick="PreviousPageAsync">Previous</FluentButton>
+            <div class="page-list">
+                @foreach (var number in GetVisiblePages())
+                {
+                    <button class="page-button @(number == page ? "active" : string.Empty)" @onclick="() => GoToPageAsync(number)">@number</button>
+                }
+            </div>
+            <FluentButton Appearance="Appearance.Stealth" Disabled="@(!CanMoveNext)" @onclick="NextPageAsync">Next</FluentButton>
+        </div>
+    </FluentCard>
+</section>
+
+@code {
+    private readonly CancellationTokenSource disposeCts = new();
+    private readonly int[] pageSizeOptions = [10, 20, 50];
+    private readonly HashSet<string> pendingClassifications = [];
+    private readonly HashSet<string> pendingUpdates = [];
+    private readonly Dictionary<string, ClassificationResult> classifications = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SelectionValues> selections = new(StringComparer.Ordinal);
+
+    private List<UncategorizedTransaction> items = [];
+    private List<string> categories = [];
+    private List<string> budgets = [];
+    private List<string> destinations = [];
+    private MetadataSummary summary = new();
+    private string selectedDestination = string.Empty;
+    private string bulkCategory = string.Empty;
+    private string bulkBudget = string.Empty;
+    private string? pageError;
+    private string? pageSuccess;
+    private int page = 1;
+    private int pageSize = 20;
+    private int totalPages = 1;
+    private bool paginationComplete;
+    private bool metadataComplete;
+    private bool bulkApplyPending;
+    private PeriodicTimer? refreshTimer;
+    private Task? refreshLoopTask;
+    private bool loadingMetadata;
+    private bool loadingTransactions;
+
+    private bool CanBulkApply => !string.IsNullOrWhiteSpace(selectedDestination) && (!string.IsNullOrWhiteSpace(bulkCategory) || !string.IsNullOrWhiteSpace(bulkBudget));
+    private bool CanMoveNext => page < totalPages || !paginationComplete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshAllAsync();
+
+        if (string.IsNullOrWhiteSpace(pageError))
+        {
+            refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            refreshLoopTask = RunRefreshLoopAsync();
+        }
+    }
+
+    private async Task RunRefreshLoopAsync()
+    {
+        try
+        {
+            while (refreshTimer is not null && await refreshTimer.WaitForNextTickAsync(disposeCts.Token))
+            {
+                if (metadataComplete && paginationComplete)
+                {
+                    continue;
+                }
+
+                await InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        await LoadMetadataAsync();
+                        if (!paginationComplete)
+                        {
+                            await LoadTransactionsAsync();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        Logger.LogDebug(exception, "Background refresh failed.");
+                    }
+
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task LoadOptionsAsync()
+    {
+        categories = (await FireflyService.GetCategoriesAsync(disposeCts.Token)).Keys.OrderBy(value => value, StringComparer.Ordinal).ToList();
+        budgets = (await FireflyService.GetBudgetsAsync(disposeCts.Token)).Keys.OrderBy(value => value, StringComparer.Ordinal).ToList();
+    }
+
+    private async Task RefreshAllAsync()
+    {
+        pageError = null;
+        pageSuccess = null;
+
+        try
+        {
+            await LoadOptionsAsync();
+            await LoadMetadataAsync();
+            await LoadTransactionsAsync();
+        }
+        catch (Exception exception)
+        {
+            pageError = exception.Message;
+            Logger.LogWarning(exception, "Could not load uncategorized transactions page.");
+        }
+    }
+
+    private async Task LoadMetadataAsync()
+    {
+        if (loadingMetadata)
+        {
+            return;
+        }
+
+        loadingMetadata = true;
+        try
+        {
+            var result = await FireflyService.GetUncategorizedMetadataAsync(ToNullable(selectedDestination), disposeCts.Token);
+            summary = result.Summary;
+            destinations = result.Destinations;
+            metadataComplete = result.Complete;
+
+            if (!string.IsNullOrWhiteSpace(selectedDestination) && !destinations.Contains(selectedDestination, StringComparer.Ordinal))
+            {
+                selectedDestination = string.Empty;
+                page = 1;
+            }
+        }
+        finally
+        {
+            loadingMetadata = false;
+        }
+    }
+
+    private async Task LoadTransactionsAsync()
+    {
+        if (loadingTransactions)
+        {
+            return;
+        }
+
+        loadingTransactions = true;
+        try
+        {
+            var result = await FireflyService.GetUncategorizedTransactionsAsync(page, pageSize, ToNullable(selectedDestination), disposeCts.Token);
+            items = result.Items;
+            totalPages = Math.Max(1, result.TotalPages);
+            paginationComplete = result.Complete;
+
+            foreach (var transaction in items)
+            {
+                _ = GetSelection(transaction.TransactionJournalId);
+            }
+        }
+        catch (Exception exception)
+        {
+            pageError = exception.Message;
+        }
+        finally
+        {
+            loadingTransactions = false;
+        }
+    }
+
+    private async Task OnPageSizeChanged(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), out var newSize))
+        {
+            pageSize = newSize;
+            page = 1;
+            await LoadTransactionsAsync();
+        }
+    }
+
+    private async Task OnDestinationChanged(ChangeEventArgs args)
+    {
+        selectedDestination = args.Value?.ToString() ?? string.Empty;
+        bulkCategory = string.Empty;
+        bulkBudget = string.Empty;
+        page = 1;
+        await RefreshAllAsync();
+    }
+
+    private Task OnBulkCategoryChanged(ChangeEventArgs args)
+    {
+        bulkCategory = args.Value?.ToString() ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task OnBulkBudgetChanged(ChangeEventArgs args)
+    {
+        bulkBudget = args.Value?.ToString() ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private async Task ClassifyAsync(UncategorizedTransaction transaction)
+    {
+        var key = transaction.TransactionJournalId;
+        if (!pendingClassifications.Add(key))
+        {
+            return;
+        }
+
+        pageError = null;
+        pageSuccess = null;
+
+        try
+        {
+            var result = await Coordinator.ClassifyForUiAsync(transaction, disposeCts.Token);
+            classifications[key] = result;
+
+            var selection = GetSelection(key);
+            if (transaction.Category is null && string.IsNullOrWhiteSpace(selection.Category) && !string.IsNullOrWhiteSpace(result.Category))
+            {
+                selection.Category = result.Category;
+            }
+
+            if (transaction.Budget is null && string.IsNullOrWhiteSpace(selection.Budget) && !string.IsNullOrWhiteSpace(result.Budget))
+            {
+                selection.Budget = result.Budget;
+            }
+        }
+        catch (Exception exception)
+        {
+            classifications[key] = new ClassificationResult
+            {
+                Error = exception.Message,
+                Status = "failed",
+            };
+        }
+        finally
+        {
+            pendingClassifications.Remove(key);
+        }
+    }
+
+    private async Task ApplyAsync(UncategorizedTransaction transaction)
+    {
+        var key = transaction.TransactionJournalId;
+        if (!pendingUpdates.Add(key))
+        {
+            return;
+        }
+
+        pageError = null;
+        pageSuccess = null;
+
+        try
+        {
+            var selection = GetSelection(key);
+            var result = await Coordinator.ApplyTransactionUpdateAsync(new ApplyTransactionRequest
+            {
+                Transaction = transaction,
+                Classification = GetClassification(key),
+                Selections = selection,
+            }, disposeCts.Token);
+
+            transaction.Category = result.Transaction.Category;
+            transaction.Budget = result.Transaction.Budget;
+            pageSuccess = "Transaction updated successfully.";
+            await LoadMetadataAsync();
+            await LoadTransactionsAsync();
+        }
+        catch (Exception exception)
+        {
+            pageError = exception.Message;
+        }
+        finally
+        {
+            pendingUpdates.Remove(key);
+        }
+    }
+
+    private async Task ApplyBulkAsync()
+    {
+        if (!CanBulkApply)
+        {
+            return;
+        }
+
+        bulkApplyPending = true;
+        pageError = null;
+        pageSuccess = null;
+
+        try
+        {
+            var updatedCount = await Coordinator.ApplyDestinationUpdateAsync(selectedDestination, new SelectionValues
+            {
+                Category = ToNullable(bulkCategory),
+                Budget = ToNullable(bulkBudget),
+            }, disposeCts.Token);
+
+            pageSuccess = updatedCount == 1
+                ? "Updated 1 transaction."
+                : $"Updated {updatedCount} transactions.";
+
+            await RefreshAllAsync();
+        }
+        catch (Exception exception)
+        {
+            pageError = exception.Message;
+        }
+        finally
+        {
+            bulkApplyPending = false;
+        }
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        if (page <= 1)
+        {
+            return;
+        }
+
+        page -= 1;
+        await LoadTransactionsAsync();
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (!CanMoveNext)
+        {
+            return;
+        }
+
+        page += 1;
+        await LoadTransactionsAsync();
+    }
+
+    private async Task GoToPageAsync(int targetPage)
+    {
+        if (targetPage == page)
+        {
+            return;
+        }
+
+        page = targetPage;
+        await LoadTransactionsAsync();
+    }
+
+    private IEnumerable<int> GetVisiblePages()
+    {
+        var start = Math.Max(1, page - 2);
+        var end = Math.Max(start, Math.Min(totalPages, page + 2));
+        return Enumerable.Range(start, end - start + 1);
+    }
+
+    private void UpdateSelection(string key, string? category = null, string? budget = null)
+    {
+        var selection = GetSelection(key);
+
+        if (category is not null)
+        {
+            selection.Category = ToNullable(category);
+        }
+
+        if (budget is not null)
+        {
+            selection.Budget = ToNullable(budget);
+        }
+    }
+
+    private SelectionValues GetSelection(string key)
+    {
+        if (!selections.TryGetValue(key, out var selection))
+        {
+            selection = new SelectionValues();
+            selections[key] = selection;
+        }
+
+        return selection;
+    }
+
+    private ClassificationResult? GetClassification(string key) => classifications.GetValueOrDefault(key);
+
+    private bool CanApply(UncategorizedTransaction transaction)
+    {
+        var selection = GetSelection(transaction.TransactionJournalId);
+        var classification = GetClassification(transaction.TransactionJournalId);
+        var category = transaction.Category ?? selection.Category ?? classification?.Category;
+        var budget = transaction.Budget ?? selection.Budget ?? classification?.Budget;
+        return !string.IsNullOrWhiteSpace(category) || !string.IsNullOrWhiteSpace(budget);
+    }
+
+    private static string GetTransactionStatus(UncategorizedTransaction transaction)
+    {
+        if (transaction.Category is null && transaction.Budget is null)
+        {
+            return "Missing both";
+        }
+
+        if (transaction.Category is null || transaction.Budget is null)
+        {
+            return "Partial";
+        }
+
+        return "Ready";
+    }
+
+    private static string GetTransactionCss(UncategorizedTransaction transaction)
+    {
+        if (transaction.Category is null && transaction.Budget is null)
+        {
+            return "missing-both";
+        }
+
+        if (transaction.Category is null || transaction.Budget is null)
+        {
+            return "partial";
+        }
+
+        return "ready";
+    }
+
+    private static string GetDisplay(string? value, string fallback) => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private static string FormatAmount(UncategorizedTransaction transaction)
+    {
+        var amount = GetDisplay(transaction.Amount, "0.00");
+        return string.IsNullOrWhiteSpace(transaction.CurrencyCode) ? amount : $"{amount} {transaction.CurrencyCode}";
+    }
+
+    private static string? ToNullable(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    public async ValueTask DisposeAsync()
+    {
+        disposeCts.Cancel();
+        if (refreshTimer is not null)
+        {
+            refreshTimer.Dispose();
+        }
+
+        if (refreshLoopTask is not null)
+        {
+            try
+            {
+                await refreshLoopTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        disposeCts.Dispose();
+    }
+}

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FireflyCategorizer.DotNet")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c302b399baa26c9815aabbf846d14b63dd5bcde6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9f83517d1dd77d2db1031fedacc225d534e6152c")]
 [assembly: System.Reflection.AssemblyProductAttribute("FireflyCategorizer.DotNet")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FireflyCategorizer.DotNet")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
