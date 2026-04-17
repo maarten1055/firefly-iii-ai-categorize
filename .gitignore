@@ -3,3 +3,16 @@ node_modules
 .env
 .env.*
 !.env.example
+
+# .NET build output
+bin/
+obj/
+TestResults/
+
+# Visual Studio
+.vs/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates

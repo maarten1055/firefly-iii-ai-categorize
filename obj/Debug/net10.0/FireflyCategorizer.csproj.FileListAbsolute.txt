@@ -77,4 +77,5 @@ C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Deb
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\FireflyCategorizer.pdb
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\FireflyCategorizer.genruntimeconfig.cache
 C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\ref\FireflyCategorizer.dll
-C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\1437l4eqdj-{0}-jgffpqysi5-jgffpqysi5.gz
+C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\1437l4eqdj-{0}-mqz091m48r-mqz091m48r.gz
+C:\Users\maarteng\projecten\FireflyIII_AI_tool\firefly-iii-ai-categorize\obj\Debug\net10.0\compressed\1437l4eqdj-{0}-mlpeq44b2n-mlpeq44b2n.gz

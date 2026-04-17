@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <title>Firefly III AI Categorizer</title>
+    <link rel="stylesheet" href="_content/Microsoft.FluentUI.AspNetCore.Components/css/reboot.css">
+    <link rel="stylesheet" href="app.css">
+    <script src="_content/Microsoft.FluentUI.AspNetCore.Components/js/loading-theme.js" type="text/javascript"></script>
+    <!--Blazor:{"type":"server","prerenderId":"e19c10261f5d4ad594f7c87ea081100e","key":{"locationHash":"77D12F14A8105320B1AAED6AE7E689DA0EC4483270A645E84079EAA0FFDF550D:6","formattedComponentKey":""},"sequence":0,"descriptor":"CfDJ8J892/TpEZxMv1nlczzOeH9KMnG0J3wTMhiGdr6F5KfklEf7TwWbDdOHxmOMnVQMgq8YwDsLnqelxnR/MRHvUibyLhglrcWqDOEQpH5AetEXCTj7pGhyzruofTD2ekrk7GFrKVZgwlUmZjeajONn/EhZk/J0aE\u002BM9z6mdWJudQ0qsvrodFiw/dXQt8YcP/r9tQCn5HtGnfFYR515B/hrfTxZcE\u002BTheXHDhEkqjUN8GAF/iLp12bukdua0B8LtWCZ8ZWCmbt9uWWvbnx5p56\u002BFngpjNZv9v9HwAOiJk0EHJLzkMnUXvz4CaWiHZMVNj2xfqN5vHOxiEs6CW7w7cvuiZPVENk0dG5lK/eEtazpF/n1hfzMBm5mZKQ\u002BU0B7MgEJlZbOyQbgjXbMdAbZJV8\u002B\u002BUX60Hi\u002BwewOEVI8i6OeNUdoQWai/dsGq4QQ6FRU/ybH4vDrLxH3zZEcAv/vOqnyeZgjfOgAdOBwm\u002B\u002Bse33c94LE8yjnG2sgc\u002B3sJ3jHuMszw3PholMlfdXZ9y2noLLPz4b5leogRddtxlrIk811w6791mqWrcc6iQqrSje/jUMupYSQqgQZSGbJVvpWmFWT5cw="}--><title>Dashboard</title><!--Blazor:{"prerenderId":"e19c10261f5d4ad594f7c87ea081100e"}--></head>
+
+<body><loading-theme storage-name="firefly-theme"></loading-theme>
+    <!--Blazor:{"type":"server","prerenderId":"09f3ee9d835b4127b30456df6782b587","key":{"locationHash":"2899577FB97B633A571BC64BF1AA6D1F1A38CB407B1879FC14BC43230F75029F:10","formattedComponentKey":""},"sequence":1,"descriptor":"CfDJ8J892/TpEZxMv1nlczzOeH\u002BVa9xRoIsny0B2ePKStYRgdlvBfQh\u002BqnLIedNfBJUnmKRhTqPdWbTOi4KzcMCjAGUwiIpGLpeOuZf9LEpN38l5xSyu2BBYsgOMwidQx1kzDAS/FQ/9pii2OrkTPKRfff3bnCe62Dp0zaYhf2TArIgMfWguux4k7ovQHlrFteJg6WqF8kEfxpj1mzZF36n5tOLYv/VklUKuK00u7\u002BBobNvA7rh65nmL4fPPJursuk/GXDFpoakiAepCC/SzlvsOxQFy3p\u002BkYZ45QLMpOqox2MmU2uZLuah5MxWCF4da2dq5dkdLzt0mXdH3RdShCtNQWtEQEoZSgAv8SBNXZh7KWNeON0kBSG\u002B\u002BdCkQ5tvmPMI3hqkNt0bARi4\u002BKoM4OYwIDGynsPoIUXnrglE5FAsIxdlQ91W0PrKzMFAPoBieWgktqVym5C/dzRfChaTiw6rllzCanCM4wShF\u002BAFnFPdUNlYVCXl9BPJWNFKrpTqKaQXBDXsIhizH5x\u002BxvOKYdyu6DnqXGRqnr4qSGyL10l4gxQV6"}--><fluent-design-theme id="f3ec5b4b4" primary-color="Excel" storage-name="firefly-theme"></fluent-design-theme>
+
+
+
+
+<div style="max-width: 1400px; margin: 0 auto; padding: 1.5rem;"><div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 10px; row-gap: 24px; width: 100%;" b-0nr62qx0mz><fluent-card b-6epdlk0xtt><div b-9fxwfzgab8><div id="f24d7b2e9" class="fluent-grid" style="justify-content: flex-start;" spacing="4" b-9fxwfzgab8><div xs="12" lg="8"><div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 10px; row-gap: 10px; width: 100%;" b-0nr62qx0mz><div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 10px; row-gap: 4px; width: 100%;" b-0nr62qx0mz><small>Blazor server console</small>
+                            <strong style="font-size: 1.8rem; line-height: 1.1;">Firefly III AI Categorizer</strong></div>
+
+                        <div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 12px; row-gap: 12px; width: 100%; flex-wrap: wrap;" b-0nr62qx0mz><fluent-button type="button" appearance="accent" Href="/" b-x1200685t0>Dashboard</fluent-button>
+                            <fluent-button type="button" appearance="outline" Href="/uncategorized" b-x1200685t0>Uncategorized</fluent-button></div></div></div>
+
+                <div xs="12" lg="4"><div class="stack-horizontal" style="justify-content: end; align-items: start; column-gap: 10px; row-gap: 8px; width: 100%;" b-0nr62qx0mz><small>Theme</small>
+                        <div class="stack-horizontal" style="justify-content: start; align-items: center; column-gap: 12px; row-gap: 12px; width: 100%; flex-wrap: wrap;" b-0nr62qx0mz><fluent-switch id="f432de3b6" aria-label="Theme">Theme
+    
+    <span slot="checked-message">Dark</span>
+        <span slot="unchecked-message">System</span></fluent-switch>
+
+    <style>
+#f5c9b9973::part(listbox) { z-index: 9995; }
+#f5c9b9973::part(selected-value) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+    
+    <fluent-select id="f5c9b9973" style="min-width: 170px;" current-value="Excel"><fluent-option id="f740a0faa" value="Excel" selected aria-selected="true"><span>Excel</span></fluent-option><fluent-option id="feacc413" value="Outlook" aria-selected="false"><span>Outlook</span></fluent-option><fluent-option id="f908000c" value="Teams" aria-selected="false"><span>Teams</span></fluent-option><fluent-option id="f19b27bc1" value="Word" aria-selected="false"><span>Word</span></fluent-option><fluent-option id="f529d5438" value="PowerPoint" aria-selected="false"><span>PowerPoint</span></fluent-option></fluent-select></div></div></div></div></div></fluent-card>
+
+        <main>
+
+<div b-9fxwfzgab8><div id="f40ed78a2" class="fluent-grid" style="justify-content: flex-start;" spacing="5" b-9fxwfzgab8><div xs="12"><fluent-card b-6epdlk0xtt><div b-9fxwfzgab8><div id="f5a1140a2" class="fluent-grid" style="justify-content: flex-start;" spacing="4" b-9fxwfzgab8><div xs="12" lg="8"><div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 10px; row-gap: 12px; width: 100%;" b-0nr62qx0mz><small>Operations dashboard</small>
+                        <div><h1>Keep an eye on automation without leaving Firefly.</h1>
+                            <p>Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.</p></div></div></div>
+
+                <div xs="12" lg="4"><div class="stack-horizontal" style="justify-content: stretch; align-items: start; column-gap: 10px; row-gap: 10px; width: 100%;" b-0nr62qx0mz><div class="fluent-messagebar intent-info" animation="fadein" b-ig2qs97tvl><div class="fluent-messagebar-icon" b-ig2qs97tvl><svg style="width: 20px; fill: var(--info);" focusable="false" viewBox="0 0 20 20" aria-hidden="true"><title>info</title><path d="M18 10a8 8 0 1 0-16 0 8 8 0 0 0 16 0ZM9.5 8.91a.5.5 0 0 1 1 0V13.6a.5.5 0 0 1-1 0V8.9Zm-.25-2.16a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Z"/></svg></div>
+
+            <div class="fluent-messagebar-message" b-ig2qs97tvl>Queued: 0 | In progress: 0</div>
+            <div class="fluent-messagebar-container-action" b-ig2qs97tvl><svg class="fluent-messagebar-close" style="width: 16px; fill: var(--neutral-foreground-rest); cursor: pointer;" focusable="false" viewBox="0 0 16 16" aria-hidden="true"><path d="m2.59 2.72.06-.07a.5.5 0 0 1 .63-.06l.07.06L8 7.29l4.65-4.64a.5.5 0 0 1 .7.7L8.71 8l4.64 4.65c.18.17.2.44.06.63l-.06.07a.5.5 0 0 1-.63.06l-.07-.06L8 8.71l-4.65 4.64a.5.5 0 0 1-.7-.7L7.29 8 2.65 3.35a.5.5 0 0 1-.06-.63l.06-.07-.06.07Z"/></svg></div></div>
+                        <div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 12px; row-gap: 12px; width: 100%; flex-wrap: wrap;" b-0nr62qx0mz><fluent-button type="button" appearance="accent" b-x1200685t0>Run diagnostics</fluent-button>
+                            <fluent-button type="button" appearance="outline" b-x1200685t0>Review uncategorized</fluent-button></div></div></div></div></div></fluent-card></div>
+
+    <div xs="12"><div b-9fxwfzgab8><div id="f7a8c482e" class="fluent-grid" style="justify-content: flex-start;" spacing="4" b-9fxwfzgab8><div xs="12" sm="6" md="3"><fluent-card b-6epdlk0xtt><small>Queued</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">0</div></fluent-card></div>
+    <div xs="12" sm="6" md="3"><fluent-card b-6epdlk0xtt><small>In progress</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">0</div></fluent-card></div>
+    <div xs="12" sm="6" md="3"><fluent-card b-6epdlk0xtt><small>Partial or failed</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">0</div></fluent-card></div>
+    <div xs="12" sm="6" md="3"><fluent-card b-6epdlk0xtt><small>Finished</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">0</div></fluent-card></div></div></div></div>
+
+    <div xs="12" lg="4"><fluent-card b-6epdlk0xtt><div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 10px; row-gap: 12px; width: 100%;" b-0nr62qx0mz><div class="stack-horizontal" style="justify-content: space-between; align-items: start; column-gap: 12px; row-gap: 12px; width: 100%; flex-wrap: wrap;" b-0nr62qx0mz><div><small>System check</small>
+                <h2>Provider health</h2></div></div><p>Run a live check against Firefly III and your configured AI provider.</p><div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 12px; row-gap: 10px; width: 100%;" b-0nr62qx0mz><fluent-button type="button" appearance="accent" b-x1200685t0>Run diagnostics</fluent-button></div></div></fluent-card></div>
+
+    <div xs="12" lg="8"><fluent-card b-6epdlk0xtt><div class="stack-horizontal" style="justify-content: start; align-items: start; column-gap: 10px; row-gap: 12px; width: 100%;" b-0nr62qx0mz><div class="stack-horizontal" style="justify-content: space-between; align-items: start; column-gap: 12px; row-gap: 12px; width: 100%; flex-wrap: wrap;" b-0nr62qx0mz><div><small>Queue activity</small>
+                <h2>Recent jobs</h2></div>
+            <strong>Live server updates</strong></div><p>No jobs have been created yet.</p></div></fluent-card></div></div></div></main>
+
+        <footer><small>Server-rendered with Blazor and Fluent UI.</small></footer></div></div>
+        <!--Blazor:{"prerenderId":"09f3ee9d835b4127b30456df6782b587"}-->
+    <script src="_framework/blazor.web.js"></script></body></html><!--Blazor-Web-Initializers:Ww0KICAiX2NvbnRlbnQvTWljcm9zb2Z0LkZsdWVudFVJLkFzcE5ldENvcmUuQ29tcG9uZW50cy9NaWNyb3NvZnQuRmx1ZW50VUkuQXNwTmV0Q29yZS5Db21wb25lbnRzLmxpYi5tb2R1bGUuanMiDQpd--><!--Blazor-Server-Component-State:CfDJ8J892/TpEZxMv1nlczzOeH8pUBtY20kOQwh0IQoilyQw7zgDHRHpDGMNnpGeUUr2dIr3mjx3hGNWf+Zu/Be4K4kT4Ul/11GLJHMxA6V/g+I1KKoNSLKNma5IOOYGfeESAz0XLITd5RT+VuOxm7Vow1XB7OJmxrpm0qj52OZnUqhwEyr++ZBdsb/v7d2k+PbRieIW3kJLiQI3dbJAGlCSlP2czOf4YuzpSUdh63Eou+F6DYcSzrtXf1io2mPdwiWkAhTpgiteocVfadr+V46vdM9+/XLsTTdWwKiuHgPP55f5utXq+1X4SwDIuwUura5tsVKJ+VBuO4CqOpLg25//N4w9J8Js21yFdGk4Z438ZGrZTBYGOt2gbZ0/U4KsIia7aIOIVJVuvqehuGLpkBIOgZq8ZefwsxyI3SPao1LvhVM73OVUdVhk+H4j9S3Nx56vBqFEk1KXh7br8JPqgkwUnrgMzk/SE+JrZWPIMgWrx3HuZv8D15TNLU9MpJmi6yTcwxdTgxcB1E0cdvlAfnO2XGHYzuR4XzUYYiIFUG7m0e3gdpwEI9B2DQ3t2eWe6MTaIxzfJBDnSSB3OeWFQ/gYHMi+UxaYn4Z3iahNRI9WQ5jf9t792EWQzGek32hiG+SHWB/cf+fedwsIMCLSLJ3kgHdWvdJA7uTKyODRmC+xBG1xLc75zRlJhSvdc/qoI5MVhOrA2vQYmuTjfmiNSGYGmWAFEwHax8upDkyJcuSIub1waxOehthHEQIXQGW1uz9ZVi8nR7th+j3NL/ebnz/qG2+CM2slRi45wEoBFv7jXEKRnNEYzyzJ/hEx927AGaSV1hyPvZu3QpOUcYDVesHfNqVEcp6IzCMBclG63nCiPc2+6I3BPH+AiSTLfjRgSfGwfB4eRJfG5zRHqWbHxpjySfOFC0vhCD2DiFZ2Kt1EAzyddanSpN9F7qixLX+F5Zu4y7/6L3L7SQZLcawHgxuwIrVXd6PaBNlrQJ3mi2IuOfTMAcJ1VhFx4EEEdxh9EqbcDuY69GlKUsVT76yqoGC0MjgiXoYX9lPWIeNnRNmfixFKBArq0KNolUROf3fB6vE0X4Y6Xcn/LZEySn9CSyuIGRllA28n/aR1eFdzKhM2KnX6ogwSpkFG0qIfef84r9rL8w==-->

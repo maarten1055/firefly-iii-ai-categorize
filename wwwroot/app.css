@@ -25,16 +25,3 @@ summary {
     cursor: pointer;
     font-weight: 600;
 }
-
-select,
-button,
-input,
-textarea {
-    font: inherit;
-}
-
-@media (max-width: 800px) {
-    body {
-        padding-inline: 0;
-    }
-}
