@@ -5,9 +5,9 @@ node_modules
 !.env.example
 
 # .NET build output
-bin/
-obj/
-TestResults/
+bin/*
+obj/*
+TestResults/*
 
 # Visual Studio
 .vs/
