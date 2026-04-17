@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Uncategorized Transactions - Firefly III AI Categorizer</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: lightgray;
+            margin: 0;
+        }
+
+        .container {
+            max-width: max(85%, 1100px);
+            margin: 3% auto;
+            padding: 24px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 6px rgba(0, 0, 0, .2);
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            border: 0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            cursor: pointer;
+            background: #1f2937;
+            color: #fff;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .button.secondary {
+            background: #2563eb;
+        }
+
+        .button.success {
+            background: #059669;
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            border: solid 1px #d1d5db;
+            border-radius: 8px;
+            padding: 14px 16px;
+            background: #f9fafb;
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: 1.5rem;
+            margin-top: 4px;
+            color: #111827;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .filter-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .filter-grid select {
+            border: solid 1px #d1d5db;
+            border-radius: 6px;
+            padding: 8px 10px;
+            background: #fff;
+            color: #111827;
+        }
+
+        .bulk-panel {
+            border: solid 1px #d1d5db;
+            border-radius: 8px;
+            padding: 16px;
+            background: #f9fafb;
+            margin-bottom: 20px;
+        }
+
+        .summary {
+            color: #4b5563;
+            margin-bottom: 20px;
+        }
+
+        .transactions {
+            display: grid;
+            gap: 16px;
+        }
+
+        .transaction {
+            border: solid 1px #d1d5db;
+            border-radius: 8px;
+            padding: 16px;
+            background: #fff;
+        }
+
+        .transaction.partial {
+            border-color: #c4b5fd;
+            background: #f5f3ff;
+        }
+
+        .transaction.missing-both {
+            border-color: #fbbf24;
+            background: #fffbeb;
+        }
+
+        .transaction.ready {
+            border-color: #86efac;
+            background: #f0fdf4;
+        }
+
+        .row {
+            margin-bottom: 8px;
+        }
+
+        .badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 8px 0 12px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .badge.partial {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        .badge.missing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.ready {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .suggestion,
+        .message-box {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 6px;
+            background: #f9fafb;
+            border: solid 1px #e5e7eb;
+        }
+
+        .message-box.error {
+            background: #fff1f2;
+            border-color: #fca5a5;
+            color: #7f1d1d;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .selection-grid label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .selection-grid select {
+            border: solid 1px #d1d5db;
+            border-radius: 6px;
+            padding: 8px 10px;
+            background: #fff;
+            color: #111827;
+        }
+
+        .selection-grid select:disabled {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .page-list {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .page-button {
+            min-width: 38px;
+            padding: 8px 10px;
+        }
+
+        .page-button.active {
+            background: #2563eb;
+        }
+
+        .muted {
+            color: #6b7280;
+        }
+
+        code {
+            background: #f3f4f6;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div class="toolbar">
+        <div>
+            <h1>Transactions missing category or budget</h1>
+            <div class="summary" id="summary">Loading transactions from Firefly III...</div>
+        </div>
+        <div class="controls">
+            <a class="button" href="/">Back to dashboard</a>
+            <button id="refresh-button" class="button secondary" type="button">Refresh</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label for="page-size">Rows per page:</label>
+        <select id="page-size">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+        </select>
+    </div>
+
+    <section class="overview" id="overview">
+        <article class="stat-card">
+            <div>Transactions in current view</div>
+            <strong id="stat-total-transactions">0</strong>
+        </article>
+        <article class="stat-card">
+            <div>Without category</div>
+            <strong id="stat-without-category">0</strong>
+        </article>
+        <article class="stat-card">
+            <div>Without budget</div>
+            <strong id="stat-without-budget">0</strong>
+        </article>
+    </section>
+
+    <div class="filter-grid">
+        <label>
+            Destination filter
+            <select id="destination-filter"></select>
+        </label>
+    </div>
+
+    <section class="bulk-panel">
+        <div class="summary" id="bulk-summary">Select a destination to update all empty values for that destination.</div>
+        <div class="selection-grid">
+            <label>
+                Bulk category
+                <select id="bulk-category"></select>
+            </label>
+            <label>
+                Bulk budget
+                <select id="bulk-budget"></select>
+            </label>
+        </div>
+        <div class="actions">
+            <button id="bulk-apply-button" class="button success" type="button" disabled>Apply to all filtered transactions</button>
+        </div>
+    </section>
+
+    <div id="transactions" class="transactions"></div>
+
+    <div class="pagination">
+        <button id="prev-page" class="button" type="button">Previous</button>
+        <div id="page-list" class="page-list"></div>
+        <span id="page-indicator">Page 1</span>
+        <button id="next-page" class="button" type="button">Next</button>
+    </div>
+</div>
+
+<script>
+    const summary = document.getElementById('summary');
+    const transactionsMount = document.getElementById('transactions');
+    const pageIndicator = document.getElementById('page-indicator');
+    const pageList = document.getElementById('page-list');
+    const prevPageButton = document.getElementById('prev-page');
+    const nextPageButton = document.getElementById('next-page');
+    const refreshButton = document.getElementById('refresh-button');
+    const pageSizeSelect = document.getElementById('page-size');
+    const destinationFilter = document.getElementById('destination-filter');
+    const bulkCategorySelect = document.getElementById('bulk-category');
+    const bulkBudgetSelect = document.getElementById('bulk-budget');
+    const bulkApplyButton = document.getElementById('bulk-apply-button');
+    const bulkSummary = document.getElementById('bulk-summary');
+    const statTotalTransactions = document.getElementById('stat-total-transactions');
+    const statWithoutCategory = document.getElementById('stat-without-category');
+    const statWithoutBudget = document.getElementById('stat-without-budget');
+
+    const state = {
+        page: 1,
+        limit: Number(pageSizeSelect.value),
+        hasNextPage: false,
+        totalPages: 1,
+        paginationComplete: false,
+        items: [],
+        destinationFilter: '',
+        destinations: [],
+        summary: {
+            totalTransactions: 0,
+            withoutCategory: 0,
+            withoutBudget: 0,
+        },
+        options: {
+            categories: [],
+            budgets: [],
+        },
+        bulkSelections: {
+            category: '',
+            budget: '',
+        },
+        classifications: new Map(),
+        selections: new Map(),
+        pendingClassifications: new Set(),
+        pendingUpdates: new Set(),
+        bulkUpdatePending: false,
+        metadataLoaded: false,
+        metadataRefreshHandle: null,
+    };
+
+    const getValueOr = (value, fallback) => value === null || value === undefined ? fallback : value;
+
+    const setSummaryError = (message) => {
+        clearMetadataRefresh();
+        summary.textContent = `Could not load transactions: ${message}`;
+        transactionsMount.innerHTML = `<div class="message-box error">${escapeHtml(message)}</div>`;
+        pageIndicator.textContent = `Page ${state.page}`;
+        pageList.innerHTML = '';
+        prevPageButton.disabled = state.page <= 1;
+        nextPageButton.disabled = true;
+    };
+
+    const clearMetadataRefresh = () => {
+        if (state.metadataRefreshHandle) {
+            window.clearTimeout(state.metadataRefreshHandle);
+            state.metadataRefreshHandle = null;
+        }
+    };
+
+    const escapeHtml = (value) => String(getValueOr(value, ''))
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const getItemKey = (item) => String(getValueOr(item.transactionJournalId, getValueOr(item.transactionId, item.id)));
+
+    const getMissingLabel = (item) => {
+        const hasCategory = Boolean(item.category);
+        const hasBudget = Boolean(item.budget);
+
+        if (!hasCategory && !hasBudget) {
+            return {label: 'Missing both', className: 'missing'};
+        }
+
+        if (!hasCategory || !hasBudget) {
+            return {label: `Missing ${hasCategory ? 'budget' : 'category'}`, className: 'partial'};
+        }
+
+        return {label: 'Ready', className: 'ready'};
+    };
+
+    const getSuggestionStatusLabel = (classification) => {
+        const status = classification ? classification.status : null;
+
+        switch (status) {
+            case 'ready':
+                return 'Ready to update';
+            case 'partial':
+                return 'Partial suggestion';
+            case 'unclassified':
+            default:
+                return 'No suggestion found';
+        }
+    };
+
+    const ensureSelections = (item) => {
+        const key = getItemKey(item);
+
+        if (!state.selections.has(key)) {
+            state.selections.set(key, {
+                category: item.category || '',
+                budget: item.budget || '',
+            });
+        }
+
+        return state.selections.get(key);
+    };
+
+    const buildOptionsMarkup = (options, selectedValue, emptyLabel) => {
+        const normalizedSelected = selectedValue || '';
+
+        return [`<option value="">${escapeHtml(emptyLabel)}</option>`]
+            .concat(options.map(option => `<option value="${escapeHtml(option)}" ${normalizedSelected === option ? 'selected' : ''}>${escapeHtml(option)}</option>`))
+            .join('');
+    };
+
+    const renderOverview = () => {
+        statTotalTransactions.textContent = String(getValueOr(state.summary.totalTransactions, 0));
+        statWithoutCategory.textContent = String(getValueOr(state.summary.withoutCategory, 0));
+        statWithoutBudget.textContent = String(getValueOr(state.summary.withoutBudget, 0));
+    };
+
+    const renderDestinationFilter = () => {
+        destinationFilter.innerHTML = buildOptionsMarkup(state.destinations, state.destinationFilter, 'All destinations');
+    };
+
+    const renderBulkPanel = () => {
+        const hasDestinationFilter = Boolean(state.destinationFilter);
+        const canApplyBulk = hasDestinationFilter && !state.bulkUpdatePending && Boolean(state.bulkSelections.category || state.bulkSelections.budget);
+
+        bulkCategorySelect.innerHTML = buildOptionsMarkup(state.options.categories, state.bulkSelections.category, 'Leave category unchanged');
+        bulkBudgetSelect.innerHTML = buildOptionsMarkup(state.options.budgets, state.bulkSelections.budget, 'Leave budget unchanged');
+        bulkCategorySelect.disabled = !hasDestinationFilter || state.bulkUpdatePending;
+        bulkBudgetSelect.disabled = !hasDestinationFilter || state.bulkUpdatePending;
+        bulkApplyButton.disabled = !canApplyBulk;
+        bulkApplyButton.textContent = state.bulkUpdatePending ? 'Updating destination...' : 'Apply to all filtered transactions';
+        bulkSummary.textContent = hasDestinationFilter
+            ? `Filtered on destination "${state.destinationFilter}". Bulk update only fills empty category or budget values for these transactions.`
+            : 'Select a destination to update all empty values for that destination.';
+    };
+
+    const renderPagination = () => {
+        pageIndicator.textContent = state.totalPages > 1
+            ? `Page ${state.page} of ${state.totalPages}${state.paginationComplete ? '' : '+'}`
+            : `Page ${state.page}`;
+        prevPageButton.disabled = state.page <= 1;
+        nextPageButton.disabled = state.paginationComplete ? state.page >= state.totalPages : !state.hasNextPage;
+
+        if (state.totalPages <= 1) {
+            pageList.innerHTML = '';
+            return;
+        }
+
+        pageList.innerHTML = Array.from({length: state.totalPages}, (_, index) => index + 1)
+            .map(page => `<button class="button page-button ${page === state.page ? 'active' : ''}" type="button" data-page-number="${page}">${page}</button>`)
+            .join('');
+    };
+
+    const renderTransactions = () => {
+        renderOverview();
+        renderDestinationFilter();
+        renderBulkPanel();
+        renderPagination();
+
+        if (state.items.length === 0) {
+            transactionsMount.innerHTML = '<div class="message-box">No transactions without category or budget were found on this page.</div>';
+            return;
+        }
+
+        transactionsMount.innerHTML = state.items.map(item => {
+            const key = getItemKey(item);
+            const missing = getMissingLabel(item);
+            const classification = state.classifications.get(key);
+            const selections = ensureSelections(item);
+            const classifyBusy = state.pendingClassifications.has(key);
+            const updateBusy = state.pendingUpdates.has(key);
+            const canApply = Boolean((!item.category && selections.category) || (!item.budget && selections.budget)) && !updateBusy;
+            const categoryOptions = buildOptionsMarkup(state.options.categories, selections.category, item.category ? 'Current category is locked' : 'Select a category');
+            const budgetOptions = buildOptionsMarkup(state.options.budgets, selections.budget, item.budget ? 'Current budget is locked' : 'Select a budget');
+
+            return `<article class="transaction ${escapeHtml(missing.className)}">
+                <div class="row"><strong>Date:</strong> <span>${escapeHtml(item.date || '')}</span></div>
+                <div class="row"><strong>Amount:</strong> <span>${escapeHtml(item.amount || '')} ${escapeHtml(item.currencyCode || '')}</span></div>
+                <div class="row"><strong>Destination:</strong> <span>${escapeHtml(item.destinationName || 'Unknown')}</span></div>
+                <div class="row"><strong>Description:</strong> <span>${escapeHtml(item.description || '')}</span></div>
+                <div class="row"><strong>Current category:</strong> <span>${item.category ? escapeHtml(item.category) : '<em>None</em>'}</span></div>
+                <div class="row"><strong>Current budget:</strong> <span>${item.budget ? escapeHtml(item.budget) : '<em>None</em>'}</span></div>
+                <div class="badges">
+                    <span class="badge ${escapeHtml(missing.className)}">${escapeHtml(missing.label)}</span>
+                    <span class="badge">Journal ID: ${escapeHtml(item.transactionJournalId)}</span>
+                </div>
+                <div class="actions">
+                    <button class="button secondary" type="button" data-action="classify" data-key="${escapeHtml(key)}" ${classifyBusy ? 'disabled' : ''}>${classifyBusy ? 'Loading suggestion...' : 'Get category/budget'}</button>
+                    <button class="button success" type="button" data-action="apply" data-key="${escapeHtml(key)}" ${(canApply ? '' : 'disabled')}>${updateBusy ? 'Updating...' : 'Apply update'}</button>
+                </div>
+                <div class="selection-grid">
+                    <label>
+                        Category
+                        <select data-selection="category" data-key="${escapeHtml(key)}" ${item.category ? 'disabled' : ''}>
+                            ${categoryOptions}
+                        </select>
+                    </label>
+                    <label>
+                        Budget
+                        <select data-selection="budget" data-key="${escapeHtml(key)}" ${item.budget ? 'disabled' : ''}>
+                            ${budgetOptions}
+                        </select>
+                    </label>
+                </div>
+                ${classification ? `<div class="suggestion">
+                    <div><strong>Suggested category:</strong> <span>${classification.category ? escapeHtml(classification.category) : '<em>None</em>'}</span></div>
+                    <div><strong>Suggested budget:</strong> <span>${classification.budget ? escapeHtml(classification.budget) : '<em>None</em>'}</span></div>
+                    <div class="badges" style="margin-top: 8px;">
+                        <span class="badge ${escapeHtml(classification.status === 'ready' ? 'ready' : classification.status === 'partial' ? 'partial' : 'missing')}">${escapeHtml(getSuggestionStatusLabel(classification))}</span>
+                        <span class="badge">History: ${escapeHtml(getValueOr(classification.historyCount, 0))}</span>
+                    </div>
+                </div>` : '<div class="muted" style="margin-top: 12px;">No suggestion loaded yet.</div>'}
+                ${classification && classification.error ? `<div class="message-box error">${escapeHtml(classification.error)}</div>` : ''}
+            </article>`;
+        }).join('');
+    };
+
+    const loadOptions = async () => {
+        const response = await fetch('/api/transactions/options');
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Could not load categories and budgets.');
+        }
+
+        state.options = {
+            categories: Array.isArray(result.categories) ? result.categories : [],
+            budgets: Array.isArray(result.budgets) ? result.budgets : [],
+        };
+    };
+
+    const loadMetadata = async () => {
+        clearMetadataRefresh();
+
+        const params = new URLSearchParams();
+
+        if (state.destinationFilter) {
+            params.set('destination', state.destinationFilter);
+        }
+
+        const response = await fetch(`/api/transactions/metadata?${params.toString()}`);
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Could not load transaction metadata.');
+        }
+
+        state.destinations = Array.isArray(result.destinations) ? result.destinations : [];
+        state.summary = result.summary || {totalTransactions: 0, withoutCategory: 0, withoutBudget: 0};
+        state.metadataLoaded = Boolean(result.complete);
+        state.paginationComplete = state.paginationComplete || state.metadataLoaded;
+
+        if (state.metadataLoaded) {
+            state.totalPages = Math.max(1, Math.ceil(getValueOr(state.summary.totalTransactions, 0) / state.limit));
+
+            if (state.page > state.totalPages) {
+                state.page = state.totalPages;
+            }
+        }
+
+        renderOverview();
+        renderDestinationFilter();
+        renderBulkPanel();
+        renderPagination();
+
+        if (!state.metadataLoaded) {
+            state.metadataRefreshHandle = window.setTimeout(() => {
+                loadMetadata().catch(error => {
+                    setSummaryError(error.message);
+                });
+            }, 1000);
+        }
+    };
+
+    const loadTransactions = async () => {
+        summary.textContent = 'Loading transactions from Firefly III...';
+        prevPageButton.disabled = true;
+        nextPageButton.disabled = true;
+
+        try {
+            const params = new URLSearchParams({
+                page: String(state.page),
+                limit: String(state.limit),
+            });
+
+            if (state.destinationFilter) {
+                params.set('destination', state.destinationFilter);
+            }
+
+            const response = await fetch(`/api/transactions/uncategorized?${params.toString()}`);
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Could not load uncategorized transactions.');
+            }
+
+            state.items = Array.isArray(result.items) ? result.items : [];
+            state.hasNextPage = Boolean(result.hasNextPage);
+            state.paginationComplete = Boolean(result.complete);
+            state.totalPages = Math.max(1, Number.parseInt(result.totalPages, 10) || 1);
+            state.classifications.clear();
+            state.selections.clear();
+
+            summary.textContent = state.destinationFilter
+                ? `Showing up to ${state.limit} transactions on page ${state.page} for destination "${state.destinationFilter}".`
+                : `Showing up to ${state.limit} transactions on page ${state.page}.`;
+            renderTransactions();
+        } catch (error) {
+            state.items = [];
+            state.hasNextPage = false;
+            setSummaryError(error.message);
+        }
+    };
+
+    const classifyTransaction = async (key) => {
+        const item = state.items.find(entry => getItemKey(entry) === key);
+        if (!item || state.pendingClassifications.has(key)) {
+            return;
+        }
+
+        state.pendingClassifications.add(key);
+        renderTransactions();
+
+        try {
+            const response = await fetch('/api/transactions/classify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({transaction: item})
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Could not classify transaction.');
+            }
+
+            state.classifications.set(key, result.classification);
+            const selections = ensureSelections(item);
+
+            if (!item.category && !selections.category && result.classification.category) {
+                selections.category = result.classification.category;
+            }
+
+            if (!item.budget && !selections.budget && result.classification.budget) {
+                selections.budget = result.classification.budget;
+            }
+        } catch (error) {
+            state.classifications.set(key, {
+                category: null,
+                budget: null,
+                historyCount: 0,
+                status: 'unclassified',
+                canUpdate: false,
+                error: error.message,
+            });
+        } finally {
+            state.pendingClassifications.delete(key);
+            renderTransactions();
+        }
+    };
+
+    const applyTransaction = async (key) => {
+        const item = state.items.find(entry => getItemKey(entry) === key);
+        const classification = state.classifications.get(key);
+        const selections = state.selections.get(key) || {category: '', budget: ''};
+
+        if (!item || state.pendingUpdates.has(key)) {
+            return;
+        }
+
+        if ((!item.category && !selections.category) && (!item.budget && !selections.budget)) {
+            return;
+        }
+
+        state.pendingUpdates.add(key);
+        renderTransactions();
+
+        try {
+            const response = await fetch('/api/transactions/apply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({transaction: item, classification, selections})
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Could not update Firefly III.');
+            }
+
+            summary.textContent = `Transaction ${item.transactionJournalId} was updated in Firefly III.`;
+            state.pendingUpdates.delete(key);
+            state.classifications.delete(key);
+            state.selections.delete(key);
+
+            if (result.status === 'ready') {
+                state.items = state.items.filter(entry => getItemKey(entry) !== key);
+            } else if (result.transaction) {
+                state.items = state.items.map(entry => getItemKey(entry) === key ? result.transaction : entry);
+            }
+
+            renderTransactions();
+            await loadTransactions();
+        } catch (error) {
+            state.classifications.set(key, {
+                ...(classification || {}),
+                error: error.message,
+            });
+            renderTransactions();
+        } finally {
+            state.pendingUpdates.delete(key);
+            renderTransactions();
+        }
+    };
+
+    window.addEventListener('error', (event) => {
+        if (event && event.message) {
+            setSummaryError(event.message);
+        }
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        const reason = event ? event.reason : null;
+        const message = reason && reason.message ? reason.message : String(getValueOr(reason, 'Unknown browser error'));
+        setSummaryError(message);
+    });
+
+    transactionsMount.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-action]');
+        if (!button) {
+            return;
+        }
+
+        const action = button.getAttribute('data-action');
+        const key = button.getAttribute('data-key');
+
+        if (action === 'classify') {
+            await classifyTransaction(key);
+            return;
+        }
+
+        if (action === 'apply') {
+            await applyTransaction(key);
+        }
+    });
+
+    transactionsMount.addEventListener('change', (event) => {
+        const select = event.target.closest('[data-selection]');
+        if (!select) {
+            return;
+        }
+
+        const key = select.getAttribute('data-key');
+        const field = select.getAttribute('data-selection');
+        const item = state.items.find(entry => getItemKey(entry) === key);
+
+        if (!key || !field || !item) {
+            return;
+        }
+
+        const selections = ensureSelections(item);
+        selections[field] = select.value;
+        renderTransactions();
+    });
+
+    destinationFilter.addEventListener('change', async () => {
+        state.destinationFilter = destinationFilter.value;
+        state.page = 1;
+        state.totalPages = 1;
+        state.paginationComplete = false;
+        state.metadataLoaded = false;
+        state.bulkSelections = {category: '', budget: ''};
+        clearMetadataRefresh();
+        await Promise.all([loadMetadata(), loadTransactions()]);
+    });
+
+    bulkCategorySelect.addEventListener('change', () => {
+        state.bulkSelections.category = bulkCategorySelect.value;
+        renderBulkPanel();
+    });
+
+    bulkBudgetSelect.addEventListener('change', () => {
+        state.bulkSelections.budget = bulkBudgetSelect.value;
+        renderBulkPanel();
+    });
+
+    bulkApplyButton.addEventListener('click', async () => {
+        if (!state.destinationFilter || state.bulkUpdatePending || (!state.bulkSelections.category && !state.bulkSelections.budget)) {
+            return;
+        }
+
+        state.bulkUpdatePending = true;
+        renderBulkPanel();
+
+        try {
+            const response = await fetch('/api/transactions/apply-destination', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    destination: state.destinationFilter,
+                    selections: state.bulkSelections,
+                })
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Could not update the filtered destination.');
+            }
+
+            summary.textContent = `${result.updatedCount} transaction(s) updated for destination "${state.destinationFilter}".`;
+            await loadTransactions();
+        } catch (error) {
+            setSummaryError(error.message);
+        } finally {
+            state.bulkUpdatePending = false;
+            renderBulkPanel();
+        }
+    });
+
+    prevPageButton.addEventListener('click', async () => {
+        if (state.page > 1) {
+            state.page -= 1;
+            await loadTransactions();
+        }
+    });
+
+    nextPageButton.addEventListener('click', async () => {
+        if (state.metadataLoaded ? state.page < state.totalPages : state.hasNextPage) {
+            state.page += 1;
+            await loadTransactions();
+        }
+    });
+
+    pageList.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-page-number]');
+        if (!button) {
+            return;
+        }
+
+        const targetPage = Number(button.getAttribute('data-page-number'));
+        if (!targetPage || targetPage === state.page) {
+            return;
+        }
+
+        state.page = targetPage;
+        await loadTransactions();
+    });
+
+    refreshButton.addEventListener('click', async () => {
+        state.totalPages = 1;
+        state.paginationComplete = false;
+        state.metadataLoaded = false;
+        clearMetadataRefresh();
+        await Promise.all([loadMetadata(), loadTransactions()]);
+    });
+
+    pageSizeSelect.addEventListener('change', async () => {
+        state.limit = Number(pageSizeSelect.value);
+        state.page = 1;
+        state.totalPages = 1;
+        state.paginationComplete = false;
+        state.metadataLoaded = false;
+        clearMetadataRefresh();
+        await Promise.all([loadMetadata(), loadTransactions()]);
+    });
+
+    Promise.all([loadOptions(), loadMetadata(), loadTransactions()]).catch(error => {
+        setSummaryError(error.message);
+    });
+</script>
+</body>
+
+</html>

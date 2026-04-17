@@ -1,2 +1,6 @@
 .idea
 node_modules
+.env
+.env.*
+!.env.example
+FireflyCategorizer.DotNet/.env

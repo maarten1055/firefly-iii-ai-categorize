@@ -1,7 +1,18 @@
-FROM node:25-alpine
-ENV NODE_ENV=production
-WORKDIR /app
-COPY ["package.json", "package-lock.json", "./"]
-RUN npm install --production
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY FireflyCategorizer.DotNet/FireflyCategorizer.DotNet.csproj FireflyCategorizer.DotNet/
+RUN dotnet restore FireflyCategorizer.DotNet/FireflyCategorizer.DotNet.csproj
+
 COPY . .
-CMD ["node", "index.js"]
+RUN dotnet publish FireflyCategorizer.DotNet/FireflyCategorizer.DotNet.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+COPY --from=build /app/publish ./
+
+ENTRYPOINT ["dotnet", "FireflyCategorizer.DotNet.dll"]

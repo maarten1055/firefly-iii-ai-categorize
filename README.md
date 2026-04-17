@@ -3,10 +3,64 @@
 This project allows you to automatically categorize your expenses in [Firefly III](https://www.firefly-iii.org/) by
 using OpenAI or Mistral AI.
 
-## Please fork me
-Unfortunately i am not able to invest more time into maintaining this project. 
 
-Feel free to fork it and create a PR that adds a link to your fork in the README file.
+## .NET backend
+
+This repository now also contains a .NET rewrite of the backend in `FireflyCategorizer.DotNet/`.
+
+The root `Dockerfile` now builds that .NET backend by default, so the repository defaults to the C# implementation.
+
+The migration and startup guide lives in `FireflyCategorizer.DotNet/README.md`.
+
+### Docker Compose for .NET backend
+
+Create a new file `docker-compose.yml` with this content (or add to an existing compose file):
+
+```yaml
+
+services:
+  categorizer-dotnet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:8080"
+    environment:
+      FIREFLY_URL: "https://firefly.example.com"
+      FIREFLY_PERSONAL_TOKEN: "eyabc123..."
+      ENABLE_UI: "true"
+      FIREFLY_TAG: "AI categorized"
+      # Choose either OpenAI or Mistral AI:
+      MISTRAL_API_KEY: "mistral-abc123..."
+      # OPENAI_API_KEY: "sk-abc123..."
+```
+
+Run `docker-compose up -d --build`.
+
+### Manually via Docker for .NET backend
+
+From the repository root:
+
+```shell
+docker build -t firefly-iii-ai-categorize-dotnet .
+
+docker run -d \
+-p 3000:8080 \
+-e FIREFLY_URL=https://firefly.example.com \
+-e FIREFLY_PERSONAL_TOKEN=eyabc123... \
+-e ENABLE_UI=true \
+-e MISTRAL_API_KEY=mistral-abc123... \
+firefly-iii-ai-categorize-dotnet
+```
+
+If you want the full migration notes, `.env` setup, and local `dotnet run` commands, see `FireflyCategorizer.DotNet/README.md`.
+
+For local development, copy `FireflyCategorizer.DotNet/.env.example` to `FireflyCategorizer.DotNet/.env` and run:
+
+```powershell
+dotnet run --project '.\FireflyCategorizer.DotNet\FireflyCategorizer.DotNet.csproj' --no-launch-profile
+```
 
 ## How it works
 
@@ -75,13 +129,16 @@ version: '3.3'
 
 services:
   categorizer:
-    image: ghcr.io/bahuma20/firefly-iii-ai-categorize:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     ports:
-      - "3000:3000"
+      - "3000:8080"
     environment:
       FIREFLY_URL: "https://firefly.example.com"
       FIREFLY_PERSONAL_TOKEN: "eyabc123..."
+      ENABLE_UI: "true"
       # Choose either OpenAI or Mistral AI:
       OPENAI_API_KEY: "sk-abc123..."
       # MISTRAL_API_KEY: "mistral-abc123..."
@@ -100,13 +157,13 @@ created before.
 
 ```shell
 docker run -d \
--p 3000:3000 \
+-p 3000:8080 \
 -e FIREFLY_URL=https://firefly.example.com \
 -e FIREFLY_PERSONAL_TOKEN=eyabc123... \
-# Choose either OpenAI or Mistral AI:
+-e ENABLE_UI=true \
 -e OPENAI_API_KEY=sk-abc123... \
 # -e MISTRAL_API_KEY=mistral-abc123... \
-ghcr.io/bahuma20/firefly-iii-ai-categorize:latest
+firefly-iii-ai-categorize-dotnet
 ```
 
 ### 4. Set up the webhook
@@ -122,7 +179,7 @@ categorization everytime a new transaction comes in.
 - Set "Response" to "Transaction details" (should be the default)
 - Set "Delivery" to "JSON" (should be the default)
 - Set "URL" to the URL where the application is reachable + "/webhook". For example if you are using docker-compose your
-  URL could look like this: `http://categorizer:3000/webhook`
+  URL could look like this: `http://categorizer:8080/webhook`
 - Click "Submit"
 
 ![Step 1](docs/img/webhook1.png)
@@ -150,7 +207,7 @@ You can configure the name of this tag by setting the environment variable `FIRE
 
 ## Running on a different port
 
-If you have to run the application on a different port than the default port `3000` set the environment variable `PORT`.
+If you have to run the application on a different port outside Docker, set `ASPNETCORE_URLS`. Example: `http://127.0.0.1:5087`.
 
 ## Full list of environment variables
 
@@ -160,4 +217,4 @@ If you have to run the application on a different port than the default port `30
 - `MISTRAL_API_KEY`: The Mistral AI API Key to authenticate against Mistral AI. (required for Mistral AI)
 - `ENABLE_UI`: If the user interface should be enabled. (Default: `false`)
 - `FIREFLY_TAG`: The tag to assign to the processed transactions. (Default: `AI categorized`)
-- `PORT`: The port where the application listens. (Default: `3000`)
+- `ASPNETCORE_URLS`: The address and port where the .NET app listens. (Optional)
