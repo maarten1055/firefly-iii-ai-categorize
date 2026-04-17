@@ -370,6 +370,7 @@
         limit: Number(pageSizeSelect.value),
         hasNextPage: false,
         totalPages: 1,
+        paginationComplete: false,
         items: [],
         destinationFilter: '',
         destinations: [],
@@ -499,13 +500,13 @@
     };
 
     const renderPagination = () => {
-        pageIndicator.textContent = state.metadataLoaded
-            ? `Page ${state.page} of ${state.totalPages}`
+        pageIndicator.textContent = state.totalPages > 1
+            ? `Page ${state.page} of ${state.totalPages}${state.paginationComplete ? '' : '+'}`
             : `Page ${state.page}`;
         prevPageButton.disabled = state.page <= 1;
-        nextPageButton.disabled = state.metadataLoaded ? state.page >= state.totalPages : !state.hasNextPage;
+        nextPageButton.disabled = state.paginationComplete ? state.page >= state.totalPages : !state.hasNextPage;
 
-        if (!state.metadataLoaded || state.totalPages <= 1) {
+        if (state.totalPages <= 1) {
             pageList.innerHTML = '';
             return;
         }
@@ -612,6 +613,7 @@
         state.destinations = Array.isArray(result.destinations) ? result.destinations : [];
         state.summary = result.summary || {totalTransactions: 0, withoutCategory: 0, withoutBudget: 0};
         state.metadataLoaded = Boolean(result.complete);
+        state.paginationComplete = state.paginationComplete || state.metadataLoaded;
 
         if (state.metadataLoaded) {
             state.totalPages = Math.max(1, Math.ceil(getValueOr(state.summary.totalTransactions, 0) / state.limit));
@@ -659,6 +661,8 @@
 
             state.items = Array.isArray(result.items) ? result.items : [];
             state.hasNextPage = Boolean(result.hasNextPage);
+            state.paginationComplete = Boolean(result.complete);
+            state.totalPages = Math.max(1, Number.parseInt(result.totalPages, 10) || 1);
             state.classifications.clear();
             state.selections.clear();
 
@@ -829,6 +833,8 @@
     destinationFilter.addEventListener('change', async () => {
         state.destinationFilter = destinationFilter.value;
         state.page = 1;
+        state.totalPages = 1;
+        state.paginationComplete = false;
         state.metadataLoaded = false;
         state.bulkSelections = {category: '', budget: ''};
         clearMetadataRefresh();
@@ -910,6 +916,8 @@
     });
 
     refreshButton.addEventListener('click', async () => {
+        state.totalPages = 1;
+        state.paginationComplete = false;
         state.metadataLoaded = false;
         clearMetadataRefresh();
         await Promise.all([loadMetadata(), loadTransactions()]);
@@ -918,6 +926,8 @@
     pageSizeSelect.addEventListener('change', async () => {
         state.limit = Number(pageSizeSelect.value);
         state.page = 1;
+        state.totalPages = 1;
+        state.paginationComplete = false;
         state.metadataLoaded = false;
         clearMetadataRefresh();
         await Promise.all([loadMetadata(), loadTransactions()]);

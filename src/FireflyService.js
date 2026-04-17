@@ -1,6 +1,7 @@
 import {getConfigVariable} from "./util.js";
 
 const UNCATEGORIZED_CACHE_TTL_MS = 5 * 60 * 1000;
+const UNCATEGORIZED_PAGE_SIZE = 100;
 const UNCATEGORIZED_SEARCH_SOURCES = [
     {
         id: "missing-category",
@@ -77,6 +78,7 @@ export default class FireflyService {
                 await this.#ensureUncategorizedCacheComplete();
             }
 
+            this.#ensureUncategorizedItemsSorted();
             filteredItems = (this.#uncategorizedCache?.items ?? []).filter(item => item.destinationName === normalizedDestination);
         } else {
             const requiredCount = startIndex + normalizedLimit + 1;
@@ -86,16 +88,23 @@ export default class FireflyService {
                 await this.#ensureUncategorizedCacheCount(requiredCount);
             }
 
+            this.#ensureUncategorizedItemsSorted();
             filteredItems = this.#uncategorizedCache?.items ?? [];
         }
 
         const items = filteredItems.slice(startIndex, startIndex + normalizedLimit + 1);
+        const visibleItems = items.slice(0, normalizedLimit);
+        const complete = normalizedDestination ? true : Boolean(this.#uncategorizedCache?.finished);
+        const totalTransactions = filteredItems.length;
 
         return {
             page: normalizedPage,
             limit: normalizedLimit,
             hasNextPage: items.length > normalizedLimit,
-            items: items.slice(0, normalizedLimit),
+            items: visibleItems,
+            totalTransactions,
+            totalPages: Math.max(normalizedPage, Math.ceil(totalTransactions / normalizedLimit)),
+            complete,
         };
     }
 
@@ -112,38 +121,28 @@ export default class FireflyService {
 
         const normalizedDestination = destinationName ? String(destinationName).trim() : null;
 
-        const destinationSummaries = new Map();
-
-        for (const item of this.#uncategorizedCache?.items ?? []) {
-            const destinationName = item.destinationName || 'Unknown';
-
-            if (!destinationSummaries.has(destinationName)) {
-                destinationSummaries.set(destinationName, {
-                    totalTransactions: 0,
-                    withoutCategory: 0,
-                    withoutBudget: 0,
-                });
-            }
-
-            const destinationSummary = destinationSummaries.get(destinationName);
-            destinationSummary.totalTransactions += 1;
-            if (!item.category) {
-                destinationSummary.withoutCategory += 1;
-            }
-            if (!item.budget) {
-                destinationSummary.withoutBudget += 1;
-            }
-        }
+        const destinationSummaries = this.#uncategorizedCache?.destinationSummaries ?? new Map();
 
         const filteredItems = normalizedDestination
             ? (this.#uncategorizedCache?.items ?? []).filter(item => item.destinationName === normalizedDestination)
             : (this.#uncategorizedCache?.items ?? []);
+        const filteredSummary = normalizedDestination
+            ? destinationSummaries.get(normalizedDestination) ?? {
+                totalTransactions: 0,
+                withoutCategory: 0,
+                withoutBudget: 0,
+            }
+            : (this.#uncategorizedCache?.totals ?? {
+                totalTransactions: 0,
+                withoutCategory: 0,
+                withoutBudget: 0,
+            });
 
         return {
             summary: {
-                totalTransactions: filteredItems.length,
-                withoutCategory: filteredItems.filter(item => !item.category).length,
-                withoutBudget: filteredItems.filter(item => !item.budget).length,
+                totalTransactions: filteredSummary.totalTransactions,
+                withoutCategory: filteredSummary.withoutCategory,
+                withoutBudget: filteredSummary.withoutBudget,
                 destinationName: normalizedDestination,
             },
             destinations: Array.from(destinationSummaries.keys()).sort((left, right) => left.localeCompare(right)),
@@ -252,12 +251,18 @@ export default class FireflyService {
             createdAt: Date.now(),
             items: [],
             itemsByJournalId: new Map(),
+            destinationSummaries: new Map(),
+            totals: {
+                totalTransactions: 0,
+                withoutCategory: 0,
+                withoutBudget: 0,
+            },
             sources: UNCATEGORIZED_SEARCH_SOURCES.map(source => ({
                 ...source,
                 nextPage: 1,
                 finished: false,
             })),
-            nextSourceIndex: 0,
+            itemsSorted: true,
             finished: false,
         };
     }
@@ -311,17 +316,23 @@ export default class FireflyService {
         }
 
         const cache = this.#uncategorizedCache;
-        const source = this.#getNextUncategorizedSource(cache);
+        const pendingSources = cache.sources.filter(source => !source.finished);
 
-        if (!source) {
+        if (pendingSources.length === 0) {
             cache.finished = true;
             return;
         }
 
+        await Promise.all(pendingSources.map(source => this.#scanUncategorizedSourcePage(cache, source)));
+
+        cache.finished = cache.sources.every(entry => entry.finished);
+    }
+
+    async #scanUncategorizedSourcePage(cache, source) {
         const params = new URLSearchParams({
             query: source.query,
             page: String(source.nextPage),
-            limit: "100"
+            limit: String(UNCATEGORIZED_PAGE_SIZE)
         });
 
         const response = await this.#authorizedFetch(`${this.#BASE_URL}/api/v1/search/transactions?${params.toString()}`);
@@ -376,7 +387,49 @@ export default class FireflyService {
 
                 cache.itemsByJournalId.set(transactionJournalId, item);
                 cache.items.push(item);
+                cache.itemsSorted = false;
+                this.#addUncategorizedMetadataEntry(cache, item);
             }
+        }
+
+        if (groups.length === 0 || !data.meta?.pagination || source.nextPage >= data.meta.pagination.total_pages) {
+            source.finished = true;
+        } else {
+            source.nextPage += 1;
+        }
+    }
+
+    #addUncategorizedMetadataEntry(cache, item) {
+        const destinationName = item.destinationName || 'Unknown';
+
+        if (!cache.destinationSummaries.has(destinationName)) {
+            cache.destinationSummaries.set(destinationName, {
+                totalTransactions: 0,
+                withoutCategory: 0,
+                withoutBudget: 0,
+            });
+        }
+
+        const destinationSummary = cache.destinationSummaries.get(destinationName);
+        destinationSummary.totalTransactions += 1;
+        cache.totals.totalTransactions += 1;
+
+        if (!item.category) {
+            destinationSummary.withoutCategory += 1;
+            cache.totals.withoutCategory += 1;
+        }
+
+        if (!item.budget) {
+            destinationSummary.withoutBudget += 1;
+            cache.totals.withoutBudget += 1;
+        }
+    }
+
+    #ensureUncategorizedItemsSorted() {
+        const cache = this.#uncategorizedCache;
+
+        if (!cache || cache.itemsSorted) {
+            return;
         }
 
         cache.items.sort((left, right) => {
@@ -389,33 +442,7 @@ export default class FireflyService {
             return Number(right.transactionJournalId) - Number(left.transactionJournalId);
         });
 
-        if (groups.length === 0 || !data.meta?.pagination || source.nextPage >= data.meta.pagination.total_pages) {
-            source.finished = true;
-        } else {
-            source.nextPage += 1;
-        }
-
-        cache.finished = cache.sources.every(entry => entry.finished);
-    }
-
-    #getNextUncategorizedSource(cache) {
-        if (!cache?.sources?.length) {
-            return null;
-        }
-
-        for (let offset = 0; offset < cache.sources.length; offset += 1) {
-            const index = (cache.nextSourceIndex + offset) % cache.sources.length;
-            const source = cache.sources[index];
-
-            if (source.finished) {
-                continue;
-            }
-
-            cache.nextSourceIndex = (index + 1) % cache.sources.length;
-            return source;
-        }
-
-        return null;
+        cache.itemsSorted = true;
     }
 
     #invalidateUncategorizedCache() {
