@@ -83,6 +83,13 @@
     </MudItem>
 
     <MudItem xs="12">
+        <TopDestinationsCard TopDestinations="topDestinations"
+                             SelectedDestination="selectedDestination"
+                             IsComplete="metadataComplete && paginationComplete"
+                             DestinationSelected="OnDestinationChanged" />
+    </MudItem>
+
+    <MudItem xs="12">
         <MudPaper Class="pa-4">
             <MudStack Spacing="3">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
@@ -251,6 +258,7 @@
     private Task? refreshLoopTask;
     private bool loadingMetadata;
     private bool loadingTransactions;
+    private IReadOnlyList<DestinationRankItem> topDestinations = [];
 
     private bool CanBulkApply => !string.IsNullOrWhiteSpace(selectedDestination) && (!string.IsNullOrWhiteSpace(bulkCategory) || !string.IsNullOrWhiteSpace(bulkBudget));
     private bool CanMoveNext => page < totalPages || !paginationComplete;
@@ -340,6 +348,7 @@
             summary = result.Summary;
             destinations = result.Destinations;
             metadataComplete = result.Complete;
+            topDestinations = await FireflyService.GetTopDestinationsAsync(10, disposeCts.Token);
 
             if (!string.IsNullOrWhiteSpace(selectedDestination) && !destinations.Contains(selectedDestination, StringComparer.Ordinal))
             {

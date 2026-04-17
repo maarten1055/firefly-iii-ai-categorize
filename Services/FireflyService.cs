@@ -106,6 +106,27 @@ public sealed class FireflyService
         };
     }
 
+    public async Task<IReadOnlyList<DestinationRankItem>> GetTopDestinationsAsync(int count = 10, CancellationToken cancellationToken = default)
+    {
+        EnsureUncategorizedCacheFresh();
+        await EnsureUncategorizedCacheCountAsync(1, cancellationToken);
+
+        var summaries = _uncategorizedCache?.DestinationSummaries ?? [];
+
+        return summaries
+            .Select(pair => new DestinationRankItem
+            {
+                Name = pair.Key,
+                WithoutCategory = pair.Value.WithoutCategory,
+                WithoutBudget = pair.Value.WithoutBudget,
+            })
+            .Where(item => item.MissingTotal > 0)
+            .OrderByDescending(item => item.MissingTotal)
+            .ThenBy(item => item.Name, StringComparer.Ordinal)
+            .Take(count)
+            .ToList();
+    }
+
     public async Task<IReadOnlyList<UncategorizedTransaction>> GetUncategorizedTransactionsForDestinationAsync(string destinationName, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(destinationName))

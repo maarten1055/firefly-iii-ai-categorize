@@ -128,6 +128,14 @@ public sealed class ApplyDestinationRequest
     public SelectionValues Selections { get; set; } = new();
 }
 
+public sealed class DestinationRankItem
+{
+    public string Name { get; init; } = string.Empty;
+    public int WithoutCategory { get; init; }
+    public int WithoutBudget { get; init; }
+    public int MissingTotal => WithoutCategory + WithoutBudget;
+}
+
 public sealed class TransactionReviewDialogModel
 {
     public UncategorizedTransaction Transaction { get; set; } = new();

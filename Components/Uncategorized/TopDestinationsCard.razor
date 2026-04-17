@@ -1,0 +1,76 @@
+<MudPaper Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <div>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Hotspots</MudText>
+                <MudText Typo="Typo.h5">Top destinations to review</MudText>
+            </div>
+            @if (!IsComplete)
+            {
+                <MudTooltip Text="Still scanning — counts may be incomplete">
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                </MudTooltip>
+            }
+        </MudStack>
+
+        @if (TopDestinations.Count == 0)
+        {
+            <MudText Color="Color.Secondary">No destinations with missing values found yet.</MudText>
+        }
+        else
+        {
+            <MudStack Spacing="1">
+                @{ var max = TopDestinations.Max(d => d.MissingTotal); }
+                @for (var i = 0; i < TopDestinations.Count; i++)
+                {
+                    var item = TopDestinations[i];
+                    var rank = i + 1;
+                    var pct = max > 0 ? (double)item.MissingTotal / max * 100 : 0;
+                    var isSelected = string.Equals(SelectedDestination, item.Name, StringComparison.Ordinal);
+
+                    <MudPaper Outlined="true" Class="@($"pa-2 {(isSelected ? "mud-theme-primary" : string.Empty)}")" Style="cursor:pointer;"
+                              @onclick="() => DestinationSelected.InvokeAsync(item.Name)">
+                        <MudStack Spacing="1">
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Style="min-width:1.4rem;text-align:right">@rank.</MudText>
+                                    <MudText Typo="Typo.body2"><strong>@item.Name</strong></MudText>
+                                </MudStack>
+                                <MudStack Row="true" Spacing="1">
+                                    @if (item.WithoutCategory > 0)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
+                                            @item.WithoutCategory cat
+                                        </MudChip>
+                                    }
+                                    @if (item.WithoutBudget > 0)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">
+                                            @item.WithoutBudget bud
+                                        </MudChip>
+                                    }
+                                </MudStack>
+                            </MudStack>
+                            <MudProgressLinear Value="@pct" Color="@(isSelected ? Color.Primary : Color.Secondary)"
+                                              Rounded="true" Size="Size.Small" />
+                        </MudStack>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DestinationRankItem> TopDestinations { get; set; } = [];
+
+    [Parameter]
+    public string SelectedDestination { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsComplete { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<string> DestinationSelected { get; set; }
+}

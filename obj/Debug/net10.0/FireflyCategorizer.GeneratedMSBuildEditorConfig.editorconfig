@@ -73,6 +73,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVbmNhdGVnb3JpemVkXEJ1bGtVcGRhdGVDYXJkLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/maarteng/projecten/FireflyIII_AI_tool/firefly-iii-ai-categorize/Components/Uncategorized/TopDestinationsCard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVbmNhdGVnb3JpemVkXFRvcERlc3RpbmF0aW9uc0NhcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/maarteng/projecten/FireflyIII_AI_tool/firefly-iii-ai-categorize/Components/Uncategorized/UncategorizedFiltersCard.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVbmNhdGVnb3JpemVkXFVuY2F0ZWdvcml6ZWRGaWx0ZXJzQ2FyZC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
