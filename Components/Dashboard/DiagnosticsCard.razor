@@ -13,7 +13,7 @@
 
         @if (!string.IsNullOrWhiteSpace(Error))
         {
-            <FluentMessageBar Intent="MessageIntent.Error" Title="Diagnostics failed">@Error</FluentMessageBar>
+            <FluentMessageBar Intent="MessageIntent.Error">Diagnostics failed: @Error</FluentMessageBar>
         }
 
         @if (Checks.Count == 0 && string.IsNullOrWhiteSpace(Error))
@@ -27,9 +27,7 @@
                 {
                     <FluentCard>
                         <FluentStack VerticalGap="8">
-                            <FluentMessageBar Intent="@(check.Ok ? MessageIntent.Success : MessageIntent.Error)" Title="@check.Name">
-                                @(check.Ok ? "OK" : "Failed")
-                            </FluentMessageBar>
+                            <FluentMessageBar Intent="@(check.Ok ? MessageIntent.Success : MessageIntent.Error)">@check.Name: @(check.Ok ? "OK" : "Failed")</FluentMessageBar>
                             @foreach (var pair in check.Details)
                             {
                                 <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="4">

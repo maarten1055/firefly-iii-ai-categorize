@@ -10,33 +10,41 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<FluentStack VerticalGap="20">
-    <FluentCard>
-        <FluentStack VerticalGap="12">
-            <small>Operations dashboard</small>
-            <div>
-                <h1>Keep an eye on automation without leaving Firefly.</h1>
-                <p>Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.</p>
-            </div>
-            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
-                <FluentButton Appearance="Appearance.Accent" @onclick="RunDiagnosticsAsync">Run diagnostics</FluentButton>
-                <FluentButton Appearance="Appearance.Stealth" @onclick='() => Navigation.NavigateTo("/uncategorized")'>Review uncategorized transactions</FluentButton>
+<FluentGrid Spacing="5">
+    <FluentGridItem xs="12">
+        <FluentCard>
+            <FluentStack VerticalGap="12">
+                <small>Operations dashboard</small>
+                <div>
+                    <h1>Keep an eye on automation without leaving Firefly.</h1>
+                    <p>Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.</p>
+                </div>
+                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
+                    <FluentButton Appearance="Appearance.Accent" @onclick="RunDiagnosticsAsync">Run diagnostics</FluentButton>
+                    <FluentButton Appearance="Appearance.Stealth" @onclick='() => Navigation.NavigateTo("/uncategorized")'>Review uncategorized transactions</FluentButton>
+                </FluentStack>
             </FluentStack>
-        </FluentStack>
-    </FluentCard>
+        </FluentCard>
+    </FluentGridItem>
 
-    <StatusSummaryCards Jobs="jobs" />
+    <FluentGridItem xs="12">
+        <StatusSummaryCards Jobs="jobs" />
+    </FluentGridItem>
 
-    <DiagnosticsCard Checks="diagnosticChecks"
-                     Error="diagnosticsError"
-                     IsRunning="diagnosticsRunning"
-                     RefreshRequested="RunDiagnosticsAsync" />
+    <FluentGridItem xs="12" lg="4">
+        <DiagnosticsCard Checks="diagnosticChecks"
+                         Error="diagnosticsError"
+                         IsRunning="diagnosticsRunning"
+                         RefreshRequested="RunDiagnosticsAsync" />
+    </FluentGridItem>
 
-    <JobsDataGrid Jobs="jobs"
-                  PendingFillJobIds="pendingFillJobIds"
-                  FillMissingRequested="PromptFillMissingAsync"
-                  ViewDetailsRequested="ShowJobDetailsAsync" />
-</FluentStack>
+    <FluentGridItem xs="12" lg="8">
+        <JobsDataGrid Jobs="jobs"
+                      PendingFillJobIds="pendingFillJobIds"
+                      FillMissingRequested="PromptFillMissingAsync"
+                      ViewDetailsRequested="ShowJobDetailsAsync" />
+    </FluentGridItem>
+</FluentGrid>
 
 @code {
     private readonly CancellationTokenSource disposeCts = new();

@@ -1,21 +1,29 @@
-<FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="16" VerticalGap="16">
-    <FluentCard style="min-width: 180px;">
-        <div>Queued</div>
-        <div><strong>@GetStatusCount("queued")</strong></div>
-    </FluentCard>
-    <FluentCard style="min-width: 180px;">
-        <div>In progress</div>
-        <div><strong>@GetStatusCount("in_progress")</strong></div>
-    </FluentCard>
-    <FluentCard style="min-width: 180px;">
-        <div>Partial or failed</div>
-        <div><strong>@(GetStatusCount("partial") + GetStatusCount("failed"))</strong></div>
-    </FluentCard>
-    <FluentCard style="min-width: 180px;">
-        <div>Finished</div>
-        <div><strong>@GetStatusCount("finished")</strong></div>
-    </FluentCard>
-</FluentStack>
+<FluentGrid Spacing="4">
+    <FluentGridItem xs="12" sm="6" md="3">
+        <FluentCard>
+            <small>Queued</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@GetStatusCount("queued")</div>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="3">
+        <FluentCard>
+            <small>In progress</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@GetStatusCount("in_progress")</div>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="3">
+        <FluentCard>
+            <small>Partial or failed</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@(GetStatusCount("partial") + GetStatusCount("failed"))</div>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="3">
+        <FluentCard>
+            <small>Finished</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@GetStatusCount("finished")</div>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
 
 @code {
     [Parameter, EditorRequired]

@@ -9,74 +9,87 @@
 
 <PageTitle>Uncategorized Transactions</PageTitle>
 
-<FluentStack VerticalGap="20">
-    <FluentCard>
-        <FluentStack VerticalGap="12">
-            <small>Review workspace</small>
-            <div>
-                <h1>Transactions missing category or budget</h1>
-                <p>Filter by destination, classify individual items, or apply one decision across a destination batch.</p>
-            </div>
-            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
-                <FluentButton Appearance="Appearance.Stealth" @onclick='() => Navigation.NavigateTo("/")'>Back to dashboard</FluentButton>
-                <FluentButton Appearance="Appearance.Accent" @onclick="RefreshAllAsync">Refresh</FluentButton>
+<FluentGrid Spacing="5">
+    <FluentGridItem xs="12">
+        <FluentCard>
+            <FluentStack VerticalGap="12">
+                <small>Review workspace</small>
+                <div>
+                    <h1>Transactions missing category or budget</h1>
+                    <p>Filter by destination, classify individual items, or apply one decision across a destination batch.</p>
+                </div>
+                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
+                    <FluentButton Appearance="Appearance.Stealth" @onclick='() => Navigation.NavigateTo("/")'>Back to dashboard</FluentButton>
+                    <FluentButton Appearance="Appearance.Accent" @onclick="RefreshAllAsync">Refresh</FluentButton>
+                </FluentStack>
             </FluentStack>
-        </FluentStack>
-    </FluentCard>
+        </FluentCard>
+    </FluentGridItem>
 
     @if (!string.IsNullOrWhiteSpace(pageError))
     {
-        <FluentMessageBar Intent="MessageIntent.Error" Title="Load failed">@pageError</FluentMessageBar>
+        <FluentGridItem xs="12">
+            <FluentMessageBar Intent="MessageIntent.Error" Title="Load failed">@pageError</FluentMessageBar>
+        </FluentGridItem>
     }
 
     @if (!string.IsNullOrWhiteSpace(pageSuccess))
     {
-        <FluentMessageBar Intent="MessageIntent.Success" Title="Update complete">@pageSuccess</FluentMessageBar>
+        <FluentGridItem xs="12">
+            <FluentMessageBar Intent="MessageIntent.Success" Title="Update complete">@pageSuccess</FluentMessageBar>
+        </FluentGridItem>
     }
 
-    <UncategorizedSummaryCards Summary="summary"
-                               MetadataComplete="metadataComplete"
-                               PaginationComplete="paginationComplete" />
+    <FluentGridItem xs="12">
+        <UncategorizedSummaryCards Summary="summary"
+                                   MetadataComplete="metadataComplete"
+                                   PaginationComplete="paginationComplete" />
+    </FluentGridItem>
 
-    <UncategorizedFiltersCard Page="page"
-                              PageSize="pageSize"
-                              PageSizeOptions="pageSizeOptions"
-                              SelectedDestination="selectedDestination"
-                              Destinations="destinations"
-                              PaginationComplete="paginationComplete"
-                              TotalPages="totalPages"
-                              PageSizeChanged="OnPageSizeChanged"
-                              DestinationChanged="OnDestinationChanged" />
+    <FluentGridItem xs="12" lg="6">
+        <UncategorizedFiltersCard Page="page"
+                                  PageSize="pageSize"
+                                  PageSizeOptions="pageSizeOptions"
+                                  SelectedDestination="selectedDestination"
+                                  Destinations="destinations"
+                                  PaginationComplete="paginationComplete"
+                                  TotalPages="totalPages"
+                                  PageSizeChanged="OnPageSizeChanged"
+                                  DestinationChanged="OnDestinationChanged" />
+    </FluentGridItem>
 
-    <BulkUpdateCard SelectedDestination="selectedDestination"
-                    Categories="categories"
-                    Budgets="budgets"
-                    BulkCategory="bulkCategory"
-                    BulkBudget="bulkBudget"
-                    CanApply="CanBulkApply"
-                    IsPending="bulkApplyPending"
-                    BulkCategoryChanged="OnBulkCategoryChanged"
-                    BulkBudgetChanged="OnBulkBudgetChanged"
-                    ApplyRequested="PromptBulkApplyAsync" />
+    <FluentGridItem xs="12" lg="6">
+        <BulkUpdateCard SelectedDestination="selectedDestination"
+                        Categories="categories"
+                        Budgets="budgets"
+                        BulkCategory="bulkCategory"
+                        BulkBudget="bulkBudget"
+                        CanApply="CanBulkApply"
+                        IsPending="bulkApplyPending"
+                        BulkCategoryChanged="OnBulkCategoryChanged"
+                        BulkBudgetChanged="OnBulkBudgetChanged"
+                        ApplyRequested="PromptBulkApplyAsync" />
+    </FluentGridItem>
 
-    <FluentCard>
-        <FluentStack VerticalGap="12">
-            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="12">
-                <div>
-                    <small>Current page</small>
-                    <h2>Transactions</h2>
-                </div>
-                <strong>@items.Count row(s)</strong>
-            </FluentStack>
+    <FluentGridItem xs="12">
+        <FluentCard>
+            <FluentStack VerticalGap="12">
+                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="12">
+                    <div>
+                        <small>Current page</small>
+                        <h2>Transactions</h2>
+                    </div>
+                    <strong>@items.Count row(s)</strong>
+                </FluentStack>
 
-            @if (items.Count == 0 && string.IsNullOrWhiteSpace(pageError))
-            {
-                <p>No transactions match the current filter.</p>
-            }
-            else
-            {
-                <div style="overflow-x:auto;">
-                <FluentDataGrid Items="items.AsQueryable()"
+                @if (items.Count == 0 && string.IsNullOrWhiteSpace(pageError))
+                {
+                    <p>No transactions match the current filter.</p>
+                }
+                else
+                {
+                    <div style="overflow-x:auto;">
+                    <FluentDataGrid Items="items.AsQueryable()"
                                 AutoFit="true"
                                 MultiLine="true"
                                 RowSize="DataGridRowSize.Small"
@@ -172,26 +185,29 @@
                             <FluentMessageBar Intent="MessageIntent.Error">@GetClassification(context.TransactionJournalId)?.Error</FluentMessageBar>
                         }
                     </TemplateColumn>
-                </FluentDataGrid>
-                </div>
-            }
-        </FluentStack>
-    </FluentCard>
+                    </FluentDataGrid>
+                    </div>
+                }
+            </FluentStack>
+        </FluentCard>
+    </FluentGridItem>
 
-    <FluentCard>
-        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="8" VerticalGap="8">
-            <FluentButton Appearance="Appearance.Stealth" Disabled="@(page <= 1)" @onclick="PreviousPageAsync">Previous</FluentButton>
-            @foreach (var number in GetVisiblePages())
-            {
-                <FluentButton Appearance="@(number == page ? Appearance.Accent : Appearance.Stealth)"
-                              @onclick="() => GoToPageAsync(number)">
-                    @number
-                </FluentButton>
-            }
-            <FluentButton Appearance="Appearance.Stealth" Disabled="@(!CanMoveNext)" @onclick="NextPageAsync">Next</FluentButton>
-        </FluentStack>
-    </FluentCard>
-</FluentStack>
+    <FluentGridItem xs="12">
+        <FluentCard>
+            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="8" VerticalGap="8">
+                <FluentButton Appearance="Appearance.Stealth" Disabled="@(page <= 1)" @onclick="PreviousPageAsync">Previous</FluentButton>
+                @foreach (var number in GetVisiblePages())
+                {
+                    <FluentButton Appearance="@(number == page ? Appearance.Accent : Appearance.Stealth)"
+                                  @onclick="() => GoToPageAsync(number)">
+                        @number
+                    </FluentButton>
+                }
+                <FluentButton Appearance="Appearance.Stealth" Disabled="@(!CanMoveNext)" @onclick="NextPageAsync">Next</FluentButton>
+            </FluentStack>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
 
 @code {
     private readonly CancellationTokenSource disposeCts = new();

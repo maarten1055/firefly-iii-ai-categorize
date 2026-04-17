@@ -8,17 +8,18 @@
 
 <div style="max-width: 1400px; margin: 0 auto; padding: 1.5rem;">
     <FluentStack VerticalGap="24">
-        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="16" VerticalGap="16">
+        <FluentStack VerticalGap="12">
             <FluentStack VerticalGap="4">
                 <small>Blazor server console</small>
                 <strong style="font-size: 1.8rem;">Firefly III AI Categorizer</strong>
             </FluentStack>
 
-            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12" VerticalAlignment="VerticalAlignment.Center">
+            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
                 <FluentButton Appearance="Appearance.Outline" Href="/">Dashboard</FluentButton>
                 <FluentButton Appearance="Appearance.Outline" Href="/uncategorized">Uncategorized</FluentButton>
-                <ThemeSwitcher @bind-Mode="themeMode" @bind-OfficeColor="themeColor" />
             </FluentStack>
+
+            <ThemeSwitcher @bind-Mode="themeMode" @bind-OfficeColor="themeColor" />
         </FluentStack>
 
         <main>

@@ -1,21 +1,29 @@
-<FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="16" VerticalGap="16">
-    <FluentCard style="min-width: 180px;">
-        <div>Transactions in view</div>
-        <div><strong>@Summary.TotalTransactions</strong></div>
-    </FluentCard>
-    <FluentCard style="min-width: 180px;">
-        <div>Without category</div>
-        <div><strong>@Summary.WithoutCategory</strong></div>
-    </FluentCard>
-    <FluentCard style="min-width: 180px;">
-        <div>Without budget</div>
-        <div><strong>@Summary.WithoutBudget</strong></div>
-    </FluentCard>
-    <FluentCard style="min-width: 180px;">
-        <div>Scan status</div>
-        <div><strong>@(MetadataComplete && PaginationComplete ? "Complete" : "Updating")</strong></div>
-    </FluentCard>
-</FluentStack>
+<FluentGrid Spacing="4">
+    <FluentGridItem xs="12" sm="6" md="3">
+        <FluentCard>
+            <small>Transactions in view</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@Summary.TotalTransactions</div>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="3">
+        <FluentCard>
+            <small>Without category</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@Summary.WithoutCategory</div>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="3">
+        <FluentCard>
+            <small>Without budget</small>
+            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@Summary.WithoutBudget</div>
+        </FluentCard>
+    </FluentGridItem>
+    <FluentGridItem xs="12" sm="6" md="3">
+        <FluentCard>
+            <small>Scan status</small>
+            <div style="font-size: 1.4rem; font-weight: 700; line-height: 1.1;">@(MetadataComplete && PaginationComplete ? "Complete" : "Updating")</div>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
 
 @code {
     [Parameter, EditorRequired]
