@@ -1,72 +1,70 @@
-<FluentCard>
-    <FluentStack VerticalGap="12">
-        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="12">
+<MudPaper Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <div>
-                <small>Queue activity</small>
-                <h2>Recent jobs</h2>
+                <MudText Typo="Typo.caption">Queue activity</MudText>
+                <MudText Typo="Typo.h5">Recent jobs</MudText>
             </div>
-            <strong>Live server updates</strong>
-        </FluentStack>
+            <MudText><strong>Live server updates</strong></MudText>
+        </MudStack>
 
         @if (Jobs.Count == 0)
         {
-            <p>No jobs have been created yet.</p>
+            <MudText>No jobs have been created yet.</MudText>
         }
         else
         {
-            <FluentPaginator State="pagination" />
-            <div style="overflow-x:auto;">
-            <FluentDataGrid Items="Jobs.AsQueryable()"
-                            Pagination="pagination"
-                            AutoFit="true"
-                            MultiLine="true"
-                            RowSize="DataGridRowSize.Small"
-                            ShowHover="true"
-                            TGridItem="JobRecord">
-                <TemplateColumn Title="Destination">
-                    <FluentStack VerticalGap="4">
-                        <strong>@GetValue(context.Data.DestinationName, "Unknown destination")</strong>
-                        <small>@context.Created.LocalDateTime.ToString("g")</small>
-                    </FluentStack>
-                </TemplateColumn>
-                <TemplateColumn Title="Status">
-                    <span>@GetStatusLabel(context.Status)</span>
-                </TemplateColumn>
-                <TemplateColumn Title="Description">
-                    <FluentStack VerticalGap="4">
-                        <strong>@GetValue(context.Data.Description, "No description")</strong>
-                        <small>ID: @context.Id</small>
-                    </FluentStack>
-                </TemplateColumn>
-                <TemplateColumn Title="Guess">
-                    <FluentStack VerticalGap="4">
-                        <strong>Category: @GetValue(context.Data.Category, "Not set")</strong>
-                        <small>Budget: @GetValue(context.Data.Budget, "Not set")</small>
-                    </FluentStack>
-                </TemplateColumn>
-                <TemplateColumn Title="Actions">
-                    <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="8" VerticalGap="8">
-                        <FluentButton Appearance="Appearance.Stealth" @onclick="() => ViewDetailsRequested.InvokeAsync(context)">Details</FluentButton>
-                        @if (CanFillMissing(context))
-                        {
-                            <FluentButton Appearance="Appearance.Accent"
-                                          Disabled="@PendingFillJobIds.Contains(context.Id)"
-                                          @onclick="() => FillMissingRequested.InvokeAsync(context.Id)">
-                                @(PendingFillJobIds.Contains(context.Id) ? "Updating..." : $"Fill {GetMissingField(context)}")
-                            </FluentButton>
-                        }
-                    </FluentStack>
-                </TemplateColumn>
-            </FluentDataGrid>
-            </div>
-            <FluentPaginator State="pagination" />
+            <MudTable Items="Jobs" Hover="true" Dense="true" RowsPerPage="8">
+                <HeaderContent>
+                    <MudTh>Destination</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Description</MudTh>
+                    <MudTh>Guess</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Destination">
+                        <MudStack Spacing="1">
+                            <strong>@GetValue(context.Data.DestinationName, "Unknown destination")</strong>
+                            <MudText Typo="Typo.caption">@context.Created.LocalDateTime.ToString("g")</MudText>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Status">@GetStatusLabel(context.Status)</MudTd>
+                    <MudTd DataLabel="Description">
+                        <MudStack Spacing="1">
+                            <strong>@GetValue(context.Data.Description, "No description")</strong>
+                            <MudText Typo="Typo.caption">ID: @context.Id</MudText>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Guess">
+                        <MudStack Spacing="1">
+                            <strong>Category: @GetValue(context.Data.Category, "Not set")</strong>
+                            <MudText Typo="Typo.caption">Budget: @GetValue(context.Data.Budget, "Not set")</MudText>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudStack Row="true" Spacing="1">
+                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => ViewDetailsRequested.InvokeAsync(context)">Details</MudButton>
+                            @if (CanFillMissing(context))
+                            {
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                           Disabled="@PendingFillJobIds.Contains(context.Id)"
+                                           OnClick="() => FillMissingRequested.InvokeAsync(context.Id)">
+                                    @(PendingFillJobIds.Contains(context.Id) ? "Updating..." : $"Fill {GetMissingField(context)}")
+                                </MudButton>
+                            }
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager />
+                </PagerContent>
+            </MudTable>
         }
-    </FluentStack>
-</FluentCard>
+    </MudStack>
+</MudPaper>
 
 @code {
-    private readonly PaginationState pagination = new() { ItemsPerPage = 8 };
-
     [Parameter, EditorRequired]
     public IReadOnlyList<JobRecord> Jobs { get; set; } = [];
 
@@ -98,4 +96,5 @@
     private static string GetMissingField(JobRecord job) => string.IsNullOrWhiteSpace(job.Data.Category) ? "category" : "budget";
 
     private static string GetValue(string? value, string fallback) => string.IsNullOrWhiteSpace(value) ? fallback : value;
+}
 }

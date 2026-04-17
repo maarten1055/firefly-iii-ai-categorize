@@ -1,62 +1,56 @@
-<FluentCard>
-    <FluentStack VerticalGap="12">
+<MudPaper Class="pa-4">
+    <MudStack Spacing="3">
         <div>
-            <small>Bulk repair</small>
-            <h2>Apply one decision to the current destination</h2>
+            <MudText Typo="Typo.caption">Bulk repair</MudText>
+            <MudText Typo="Typo.h5">Apply one decision to the current destination</MudText>
         </div>
 
-        <p>
-        @if (string.IsNullOrWhiteSpace(SelectedDestination))
-        {
-            <span>Select a destination first to bulk update matching transactions.</span>
-        }
-        else
-        {
-            <span>Bulk updates affect empty values for <strong>@SelectedDestination</strong>.</span>
-        }
-        </p>
+        <MudText>
+            @if (string.IsNullOrWhiteSpace(SelectedDestination))
+            {
+                <span>Select a destination first to bulk update matching transactions.</span>
+            }
+            else
+            {
+                <span>Bulk updates affect empty values for <strong>@SelectedDestination</strong>.</span>
+            }
+        </MudText>
 
-        <FluentGrid Spacing="4">
-            <FluentGridItem xs="12" md="6">
-                <FluentStack VerticalGap="6">
-                    <FluentLabel>Bulk category</FluentLabel>
-                    <FluentSelect TOption="string"
-                                  SelectedOption="@BulkCategory"
-                                  SelectedOptionChanged="BulkCategoryChanged"
-                                  Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
-                    <FluentOption Value="@string.Empty">Leave unchanged</FluentOption>
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudSelect T="string" Label="Bulk category"
+                           Value="@BulkCategory"
+                           ValueChanged="BulkCategoryChanged"
+                           Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
+                    <MudSelectItem T="string" Value="@string.Empty">Leave unchanged</MudSelectItem>
                     @foreach (var category in Categories)
                     {
-                        <FluentOption Value="@category">@category</FluentOption>
+                        <MudSelectItem T="string" Value="@category">@category</MudSelectItem>
                     }
-                    </FluentSelect>
-                </FluentStack>
-            </FluentGridItem>
+                </MudSelect>
+            </MudItem>
 
-            <FluentGridItem xs="12" md="6">
-                <FluentStack VerticalGap="6">
-                    <FluentLabel>Bulk budget</FluentLabel>
-                    <FluentSelect TOption="string"
-                                  SelectedOption="@BulkBudget"
-                                  SelectedOptionChanged="BulkBudgetChanged"
-                                  Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
-                    <FluentOption Value="@string.Empty">Leave unchanged</FluentOption>
+            <MudItem xs="12" md="6">
+                <MudSelect T="string" Label="Bulk budget"
+                           Value="@BulkBudget"
+                           ValueChanged="BulkBudgetChanged"
+                           Disabled="@string.IsNullOrWhiteSpace(SelectedDestination)">
+                    <MudSelectItem T="string" Value="@string.Empty">Leave unchanged</MudSelectItem>
                     @foreach (var budget in Budgets)
                     {
-                        <FluentOption Value="@budget">@budget</FluentOption>
+                        <MudSelectItem T="string" Value="@budget">@budget</MudSelectItem>
                     }
-                    </FluentSelect>
-                </FluentStack>
-            </FluentGridItem>
-        </FluentGrid>
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
 
-        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="12">
-            <FluentButton Appearance="Appearance.Accent" Disabled="@(!CanApply || IsPending)" @onclick="ApplyRequested">
+        <div>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!CanApply || IsPending)" OnClick="ApplyRequested">
                 @(IsPending ? "Applying..." : "Apply to filtered transactions")
-            </FluentButton>
-        </FluentStack>
-    </FluentStack>
-</FluentCard>
+            </MudButton>
+        </div>
+    </MudStack>
+</MudPaper>
 
 @code {
     [Parameter]

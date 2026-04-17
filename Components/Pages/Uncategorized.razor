@@ -5,59 +5,59 @@
 @inject ILogger<Uncategorized> Logger
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
-@inject IToastService ToastService
+@inject ISnackbar Snackbar
 
 <PageTitle>Uncategorized Transactions</PageTitle>
 
-<FluentGrid Spacing="5">
-    <FluentGridItem xs="12">
-        <FluentCard>
-            <FluentGrid Spacing="4">
-                <FluentGridItem xs="12" lg="8">
-                    <FluentStack VerticalGap="12">
-                        <small>Review workspace</small>
+<MudGrid Spacing="3">
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" lg="8">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.caption">Review workspace</MudText>
                         <div>
-                            <h1>Transactions missing category or budget</h1>
-                            <p>Filter by destination, classify individual items, or apply one decision across a destination batch.</p>
+                            <MudText Typo="Typo.h4">Transactions missing category or budget</MudText>
+                            <MudText>Filter by destination, classify individual items, or apply one decision across a destination batch.</MudText>
                         </div>
-                    </FluentStack>
-                </FluentGridItem>
+                    </MudStack>
+                </MudItem>
 
-                <FluentGridItem xs="12" lg="4">
-                    <FluentStack VerticalGap="10" HorizontalAlignment="HorizontalAlignment.Stretch">
-                        <FluentMessageBar Intent="MessageIntent.Info">Destination: @(string.IsNullOrWhiteSpace(selectedDestination) ? "All" : selectedDestination)</FluentMessageBar>
-                        <FluentMessageBar Intent="@(paginationComplete ? MessageIntent.Success : MessageIntent.Info)">Page @(page) of @(paginationComplete ? totalPages.ToString() : $"{totalPages}+")</FluentMessageBar>
-                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
-                            <FluentButton Appearance="Appearance.Outline" @onclick='() => Navigation.NavigateTo("/")'>Back to dashboard</FluentButton>
-                            <FluentButton Appearance="Appearance.Accent" @onclick="RefreshAllAsync">Refresh</FluentButton>
-                        </FluentStack>
-                    </FluentStack>
-                </FluentGridItem>
-            </FluentGrid>
-        </FluentCard>
-    </FluentGridItem>
+                <MudItem xs="12" lg="4">
+                    <MudStack Spacing="2">
+                        <MudAlert Severity="Severity.Info">Destination: @(string.IsNullOrWhiteSpace(selectedDestination) ? "All" : selectedDestination)</MudAlert>
+                        <MudAlert Severity="@(paginationComplete ? Severity.Success : Severity.Info)">Page @(page) of @(paginationComplete ? totalPages.ToString() : $"{totalPages}+")</MudAlert>
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick='() => Navigation.NavigateTo("/")'>Back to dashboard</MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RefreshAllAsync">Refresh</MudButton>
+                        </MudStack>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
 
     @if (!string.IsNullOrWhiteSpace(pageError))
     {
-        <FluentGridItem xs="12">
-            <FluentMessageBar Intent="MessageIntent.Error" Title="Load failed">@pageError</FluentMessageBar>
-        </FluentGridItem>
+        <MudItem xs="12">
+            <MudAlert Severity="Severity.Error" Title="Load failed">@pageError</MudAlert>
+        </MudItem>
     }
 
     @if (!string.IsNullOrWhiteSpace(pageSuccess))
     {
-        <FluentGridItem xs="12">
-            <FluentMessageBar Intent="MessageIntent.Success" Title="Update complete">@pageSuccess</FluentMessageBar>
-        </FluentGridItem>
+        <MudItem xs="12">
+            <MudAlert Severity="Severity.Success" Title="Update complete">@pageSuccess</MudAlert>
+        </MudItem>
     }
 
-    <FluentGridItem xs="12">
+    <MudItem xs="12">
         <UncategorizedSummaryCards Summary="summary"
                                    MetadataComplete="metadataComplete"
                                    PaginationComplete="paginationComplete" />
-    </FluentGridItem>
+    </MudItem>
 
-    <FluentGridItem xs="12" lg="6">
+    <MudItem xs="12" lg="6">
         <UncategorizedFiltersCard Page="page"
                                   PageSize="pageSize"
                                   PageSizeOptions="pageSizeOptions"
@@ -67,9 +67,9 @@
                                   TotalPages="totalPages"
                                   PageSizeChanged="OnPageSizeChanged"
                                   DestinationChanged="OnDestinationChanged" />
-    </FluentGridItem>
+    </MudItem>
 
-    <FluentGridItem xs="12" lg="6">
+    <MudItem xs="12" lg="6">
         <BulkUpdateCard SelectedDestination="selectedDestination"
                         Categories="categories"
                         Budgets="budgets"
@@ -80,145 +80,148 @@
                         BulkCategoryChanged="OnBulkCategoryChanged"
                         BulkBudgetChanged="OnBulkBudgetChanged"
                         ApplyRequested="PromptBulkApplyAsync" />
-    </FluentGridItem>
+    </MudItem>
 
-    <FluentGridItem xs="12">
-        <FluentCard>
-            <FluentStack VerticalGap="12">
-                <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="12">
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <div>
-                        <small>Current page</small>
-                        <h2>Transactions</h2>
+                        <MudText Typo="Typo.caption">Current page</MudText>
+                        <MudText Typo="Typo.h5">Transactions</MudText>
                     </div>
-                    <strong>@items.Count row(s)</strong>
-                </FluentStack>
+                    <MudText><strong>@items.Count row(s)</strong></MudText>
+                </MudStack>
 
                 @if (items.Count == 0 && string.IsNullOrWhiteSpace(pageError))
                 {
-                    <p>No transactions match the current filter.</p>
+                    <MudText>No transactions match the current filter.</MudText>
                 }
                 else
                 {
-                    <div style="overflow-x:auto;">
-                    <FluentDataGrid Items="items.AsQueryable()"
-                                AutoFit="true"
-                                MultiLine="true"
-                                RowSize="DataGridRowSize.Small"
-                                ShowHover="true"
-                                TGridItem="UncategorizedTransaction">
-                    <TemplateColumn Title="Destination">
-                        <FluentStack VerticalGap="4">
-                            <strong>@GetDisplay(context.DestinationName, "Unknown destination")</strong>
-                            <small>@GetDisplay(context.Date, "No date")</small>
-                        </FluentStack>
-                    </TemplateColumn>
-                    <TemplateColumn Title="Description">
-                        <FluentStack VerticalGap="4">
-                            <strong>@GetDisplay(context.Description, "No description")</strong>
-                            <small>@GetDisplay(context.SourceName, "Unknown source")</small>
-                        </FluentStack>
-                    </TemplateColumn>
-                    <TemplateColumn Title="Amount">
-                        <FluentStack VerticalGap="4">
-                            <strong>@FormatAmount(context)</strong>
-                            <small>@GetTransactionStatus(context)</small>
-                        </FluentStack>
-                    </TemplateColumn>
-                    <TemplateColumn Title="Category">
-                        @{ var selection = GetSelection(context.TransactionJournalId); }
-                        @if (!string.IsNullOrWhiteSpace(context.Category))
-                        {
-                            <strong>@context.Category</strong>
-                        }
-                        else
-                        {
-                            <FluentSelect TOption="string"
-                                          SelectedOption="@(selection.Category ?? string.Empty)"
-                                          SelectedOptionChanged="value => OnCategorySelectionChanged(context.TransactionJournalId, value)">
-                                <FluentOption Value="@string.Empty">Select category</FluentOption>
-                                @foreach (var category in categories)
+                    <MudTable Items="items" Hover="true" Dense="true">
+                        <HeaderContent>
+                            <MudTh>Destination</MudTh>
+                            <MudTh>Description</MudTh>
+                            <MudTh>Amount</MudTh>
+                            <MudTh>Category</MudTh>
+                            <MudTh>Budget</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Destination">
+                                <MudStack Spacing="1">
+                                    <strong>@GetDisplay(context.DestinationName, "Unknown destination")</strong>
+                                    <MudText Typo="Typo.caption">@GetDisplay(context.Date, "No date")</MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Description">
+                                <MudStack Spacing="1">
+                                    <strong>@GetDisplay(context.Description, "No description")</strong>
+                                    <MudText Typo="Typo.caption">@GetDisplay(context.SourceName, "Unknown source")</MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Amount">
+                                <MudStack Spacing="1">
+                                    <strong>@FormatAmount(context)</strong>
+                                    <MudText Typo="Typo.caption">@GetTransactionStatus(context)</MudText>
+                                </MudStack>
+                            </MudTd>
+                            <MudTd DataLabel="Category">
+                                @{ var selection = GetSelection(context.TransactionJournalId); }
+                                @if (!string.IsNullOrWhiteSpace(context.Category))
                                 {
-                                    <FluentOption Value="@category">@category</FluentOption>
+                                    <strong>@context.Category</strong>
                                 }
-                            </FluentSelect>
-
-                            @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Category))
-                            {
-                                <small>AI: @GetClassification(context.TransactionJournalId)?.Category</small>
-                            }
-                        }
-                    </TemplateColumn>
-                    <TemplateColumn Title="Budget">
-                        @{ var selection = GetSelection(context.TransactionJournalId); }
-                        @if (!string.IsNullOrWhiteSpace(context.Budget))
-                        {
-                            <strong>@context.Budget</strong>
-                        }
-                        else
-                        {
-                            <FluentSelect TOption="string"
-                                          SelectedOption="@(selection.Budget ?? string.Empty)"
-                                          SelectedOptionChanged="value => OnBudgetSelectionChanged(context.TransactionJournalId, value)">
-                                <FluentOption Value="@string.Empty">Select budget</FluentOption>
-                                @foreach (var budget in budgets)
+                                else
                                 {
-                                    <FluentOption Value="@budget">@budget</FluentOption>
+                                    <MudSelect T="string" Dense="true" Margin="Margin.Dense"
+                                               Value="@(selection.Category ?? string.Empty)"
+                                               ValueChanged="value => OnCategorySelectionChanged(context.TransactionJournalId, value)">
+                                        <MudSelectItem T="string" Value="@string.Empty">Select category</MudSelectItem>
+                                        @foreach (var category in categories)
+                                        {
+                                            <MudSelectItem T="string" Value="@category">@category</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                    @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Category))
+                                    {
+                                        <MudText Typo="Typo.caption">AI: @GetClassification(context.TransactionJournalId)?.Category</MudText>
+                                    }
                                 }
-                            </FluentSelect>
-
-                            @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Budget))
-                            {
-                                <small>AI: @GetClassification(context.TransactionJournalId)?.Budget</small>
-                            }
-                        }
-                    </TemplateColumn>
-                    <TemplateColumn Title="Actions">
-                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="8" VerticalGap="8">
-                            <FluentButton Appearance="Appearance.Stealth"
-                                          Disabled="@pendingClassifications.Contains(context.TransactionJournalId)"
-                                          @onclick="() => ClassifyAsync(context)">
-                                @(pendingClassifications.Contains(context.TransactionJournalId) ? "Classifying..." : "Ask AI")
-                            </FluentButton>
-                            <FluentButton Appearance="Appearance.Stealth"
-                                          Disabled="@(GetClassification(context.TransactionJournalId) is null)"
-                                          @onclick="() => ShowTransactionDetailsAsync(context)">
-                                Details
-                            </FluentButton>
-                            <FluentButton Appearance="Appearance.Accent"
-                                          Disabled="@(!CanApply(context) || pendingUpdates.Contains(context.TransactionJournalId))"
-                                          @onclick="() => ApplyAsync(context)">
-                                @(pendingUpdates.Contains(context.TransactionJournalId) ? "Applying..." : "Apply")
-                            </FluentButton>
-                        </FluentStack>
-
-                        @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Error))
-                        {
-                            <FluentMessageBar Intent="MessageIntent.Error">@GetClassification(context.TransactionJournalId)?.Error</FluentMessageBar>
-                        }
-                    </TemplateColumn>
-                    </FluentDataGrid>
-                    </div>
+                            </MudTd>
+                            <MudTd DataLabel="Budget">
+                                @{ var selection = GetSelection(context.TransactionJournalId); }
+                                @if (!string.IsNullOrWhiteSpace(context.Budget))
+                                {
+                                    <strong>@context.Budget</strong>
+                                }
+                                else
+                                {
+                                    <MudSelect T="string" Dense="true" Margin="Margin.Dense"
+                                               Value="@(selection.Budget ?? string.Empty)"
+                                               ValueChanged="value => OnBudgetSelectionChanged(context.TransactionJournalId, value)">
+                                        <MudSelectItem T="string" Value="@string.Empty">Select budget</MudSelectItem>
+                                        @foreach (var budget in budgets)
+                                        {
+                                            <MudSelectItem T="string" Value="@budget">@budget</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                    @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Budget))
+                                    {
+                                        <MudText Typo="Typo.caption">AI: @GetClassification(context.TransactionJournalId)?.Budget</MudText>
+                                    }
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Actions">
+                                <MudStack Spacing="1">
+                                    <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap">
+                                        <MudButton Variant="Variant.Text" Size="Size.Small"
+                                                   Disabled="@pendingClassifications.Contains(context.TransactionJournalId)"
+                                                   OnClick="() => ClassifyAsync(context)">
+                                            @(pendingClassifications.Contains(context.TransactionJournalId) ? "Classifying..." : "Ask AI")
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Text" Size="Size.Small"
+                                                   Disabled="@(GetClassification(context.TransactionJournalId) is null)"
+                                                   OnClick="() => ShowTransactionDetailsAsync(context)">
+                                            Details
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small"
+                                                   Disabled="@(!CanApply(context) || pendingUpdates.Contains(context.TransactionJournalId))"
+                                                   OnClick="() => ApplyAsync(context)">
+                                            @(pendingUpdates.Contains(context.TransactionJournalId) ? "Applying..." : "Apply")
+                                        </MudButton>
+                                    </MudStack>
+                                    @if (!string.IsNullOrWhiteSpace(GetClassification(context.TransactionJournalId)?.Error))
+                                    {
+                                        <MudAlert Severity="Severity.Error" Dense="true">@GetClassification(context.TransactionJournalId)?.Error</MudAlert>
+                                    }
+                                </MudStack>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
                 }
-            </FluentStack>
-        </FluentCard>
-    </FluentGridItem>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
 
-    <FluentGridItem xs="12">
-        <FluentCard>
-            <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="8" VerticalGap="8">
-                <FluentButton Appearance="Appearance.Stealth" Disabled="@(page <= 1)" @onclick="PreviousPageAsync">Previous</FluentButton>
+    <MudItem xs="12">
+        <MudPaper Class="pa-3">
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1">
+                <MudButton Variant="Variant.Text" Disabled="@(page <= 1)" OnClick="PreviousPageAsync">Previous</MudButton>
                 @foreach (var number in GetVisiblePages())
                 {
-                    <FluentButton Appearance="@(number == page ? Appearance.Accent : Appearance.Stealth)"
-                                  @onclick="() => GoToPageAsync(number)">
+                    <MudButton Variant="@(number == page ? Variant.Filled : Variant.Text)"
+                               Color="@(number == page ? Color.Primary : Color.Default)"
+                               OnClick="() => GoToPageAsync(number)">
                         @number
-                    </FluentButton>
+                    </MudButton>
                 }
-                <FluentButton Appearance="Appearance.Stealth" Disabled="@(!CanMoveNext)" @onclick="NextPageAsync">Next</FluentButton>
-            </FluentStack>
-        </FluentCard>
-    </FluentGridItem>
-</FluentGrid>
+                <MudButton Variant="Variant.Text" Disabled="@(!CanMoveNext)" OnClick="NextPageAsync">Next</MudButton>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
     private readonly CancellationTokenSource disposeCts = new();
@@ -314,7 +317,7 @@
             await LoadOptionsAsync();
             await LoadMetadataAsync();
             await LoadTransactionsAsync();
-            ToastService.ShowSuccess("Transaction data refreshed.");
+            Snackbar.Add("Transaction data refreshed.", Severity.Success);
         }
         catch (Exception exception)
         {
@@ -447,7 +450,7 @@
                 selection.Budget = result.Budget;
             }
 
-            ToastService.ShowSuccess("AI suggestions loaded for the selected transaction.");
+            Snackbar.Add("AI suggestions loaded for the selected transaction.", Severity.Success);
         }
         catch (Exception exception)
         {
@@ -457,7 +460,7 @@
                 Status = "failed",
             };
 
-            ToastService.ShowError($"Classification failed: {exception.Message}");
+            Snackbar.Add($"Classification failed: {exception.Message}", Severity.Error);
         }
         finally
         {
@@ -489,14 +492,14 @@
             transaction.Category = result.Transaction.Category;
             transaction.Budget = result.Transaction.Budget;
             pageSuccess = "Transaction updated successfully.";
-            ToastService.ShowSuccess("Transaction updated successfully.");
+            Snackbar.Add("Transaction updated successfully.", Severity.Success);
             await LoadMetadataAsync();
             await LoadTransactionsAsync();
         }
         catch (Exception exception)
         {
             pageError = exception.Message;
-            ToastService.ShowError($"Update failed: {exception.Message}");
+            Snackbar.Add($"Update failed: {exception.Message}", Severity.Error);
         }
         finally
         {
@@ -511,9 +514,8 @@
             return;
         }
 
-        var dialog = await DialogService.ShowConfirmationAsync($"Apply the selected values to all matching transactions for {selectedDestination}?", "Apply changes", "Cancel", "Bulk repair");
-        var result = await dialog.Result;
-        if (result.Cancelled)
+        var confirmed = await DialogService.ShowMessageBoxAsync("Bulk repair", $"Apply the selected values to all matching transactions for {selectedDestination}?", yesText: "Apply changes", cancelText: "Cancel");
+        if (confirmed != true)
         {
             return;
         }
@@ -544,14 +546,14 @@
                 ? "Updated 1 transaction."
                 : $"Updated {updatedCount} transactions.";
 
-            ToastService.ShowSuccess(pageSuccess);
+            Snackbar.Add(pageSuccess, Severity.Success);
 
             await RefreshAllAsync();
         }
         catch (Exception exception)
         {
             pageError = exception.Message;
-            ToastService.ShowError($"Bulk update failed: {exception.Message}");
+            Snackbar.Add($"Bulk update failed: {exception.Message}", Severity.Error);
         }
         finally
         {
@@ -629,19 +631,19 @@
 
     private async Task ShowTransactionDetailsAsync(UncategorizedTransaction transaction)
     {
-        await DialogService.ShowPanelAsync<TransactionAiDetailsDialog>(new TransactionReviewDialogModel
+        var parameters = new DialogParameters<TransactionAiDetailsDialog>
         {
-            Transaction = transaction,
-            Classification = GetClassification(transaction.TransactionJournalId),
-            Selections = GetSelection(transaction.TransactionJournalId),
-        }, new DialogParameters
-        {
-            Title = transaction.DestinationName ?? "Transaction details",
-            Width = "760px",
-            Alignment = HorizontalAlignment.Right,
-            Modal = false,
-            ShowDismiss = true,
-        });
+            {
+                x => x.Content, new TransactionReviewDialogModel
+                {
+                    Transaction = transaction,
+                    Classification = GetClassification(transaction.TransactionJournalId),
+                    Selections = GetSelection(transaction.TransactionJournalId),
+                }
+            }
+        };
+        var options = new DialogOptions { Position = DialogPosition.CenterRight, CloseButton = true, MaxWidth = MaxWidth.Medium };
+        DialogService.ShowAsync<TransactionAiDetailsDialog>(transaction.DestinationName ?? "Transaction details", parameters, options);
     }
 
     private bool CanApply(UncategorizedTransaction transaction)

@@ -1,61 +1,67 @@
-@implements IDialogContentComponent<TransactionReviewDialogModel>
+<MudDialogContent>
+    <MudStack Spacing="4">
+        <MudPaper Class="pa-4">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h6">Transaction</MudText>
+                <MudStack Spacing="1">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Destination</MudText><strong>@(Content.Transaction.DestinationName ?? "Unknown destination")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Description</MudText><strong>@(Content.Transaction.Description ?? "No description")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Source</MudText><strong>@(Content.Transaction.SourceName ?? "Unknown source")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Amount</MudText><strong>@FormatAmount(Content.Transaction)</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Current category</MudText><strong>@(Content.Transaction.Category ?? "Missing")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Current budget</MudText><strong>@(Content.Transaction.Budget ?? "Missing")</strong></MudStack>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
 
-<FluentStack VerticalGap="16">
-    <FluentCard>
-        <FluentStack VerticalGap="8">
-            <h3>Transaction</h3>
-            <FluentStack VerticalGap="6">
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Destination</span><strong>@(Content.Transaction.DestinationName ?? "Unknown destination")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Description</span><strong>@(Content.Transaction.Description ?? "No description")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Source</span><strong>@(Content.Transaction.SourceName ?? "Unknown source")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Amount</span><strong>@FormatAmount(Content.Transaction)</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Current category</span><strong>@(Content.Transaction.Category ?? "Missing")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Current budget</span><strong>@(Content.Transaction.Budget ?? "Missing")</strong></FluentStack>
-            </FluentStack>
-        </FluentStack>
-    </FluentCard>
+        <MudPaper Class="pa-4">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h6">Selections and suggestions</MudText>
+                <MudStack Spacing="1">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Selected category</MudText><strong>@(Content.Selections.Category ?? "None")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Selected budget</MudText><strong>@(Content.Selections.Budget ?? "None")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>AI status</MudText><strong>@(Content.Classification?.Status ?? "Not classified")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Suggested category</MudText><strong>@(Content.Classification?.Category ?? "No suggestion")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Suggested budget</MudText><strong>@(Content.Classification?.Budget ?? "No suggestion")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>History used</MudText><strong>@(Content.Classification?.HistoryCount ?? 0)</strong></MudStack>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
 
-    <FluentCard>
-        <FluentStack VerticalGap="8">
-            <h3>Selections and suggestions</h3>
-            <FluentStack VerticalGap="6">
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Selected category</span><strong>@(Content.Selections.Category ?? "None")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Selected budget</span><strong>@(Content.Selections.Budget ?? "None")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>AI status</span><strong>@(Content.Classification?.Status ?? "Not classified")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Suggested category</span><strong>@(Content.Classification?.Category ?? "No suggestion")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Suggested budget</span><strong>@(Content.Classification?.Budget ?? "No suggestion")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>History used</span><strong>@(Content.Classification?.HistoryCount ?? 0)</strong></FluentStack>
-            </FluentStack>
-        </FluentStack>
-    </FluentCard>
+        @if (!string.IsNullOrWhiteSpace(Content.Classification?.Error))
+        {
+            <MudAlert Severity="Severity.Error" Title="Error">@Content.Classification?.Error</MudAlert>
+        }
 
-    @if (!string.IsNullOrWhiteSpace(Content.Classification?.Error))
-    {
-        <FluentMessageBar Intent="MessageIntent.Error" Title="Error">@Content.Classification?.Error</FluentMessageBar>
-    }
+        @if (!string.IsNullOrWhiteSpace(Content.Classification?.Prompt))
+        {
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Prompt</MudText>
+                    <pre>@Content.Classification?.Prompt</pre>
+                </MudStack>
+            </MudPaper>
+        }
 
-    @if (!string.IsNullOrWhiteSpace(Content.Classification?.Prompt))
-    {
-        <FluentCard>
-            <FluentStack VerticalGap="8">
-                <h3>Prompt</h3>
-                <pre>@Content.Classification?.Prompt</pre>
-            </FluentStack>
-        </FluentCard>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(Content.Classification?.Response))
-    {
-        <FluentCard>
-            <FluentStack VerticalGap="8">
-                <h3>Model response</h3>
-                <pre>@Content.Classification?.Response</pre>
-            </FluentStack>
-        </FluentCard>
-    }
-</FluentStack>
+        @if (!string.IsNullOrWhiteSpace(Content.Classification?.Response))
+        {
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Model response</MudText>
+                    <pre>@Content.Classification?.Response</pre>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
+</MudDialogContent>
+<MudDialogActions>
+    <MudButton OnClick="@(() => MudDialog.Close())">Close</MudButton>
+</MudDialogActions>
 
 @code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
     [Parameter]
     public TransactionReviewDialogModel Content { get; set; } = default!;
 

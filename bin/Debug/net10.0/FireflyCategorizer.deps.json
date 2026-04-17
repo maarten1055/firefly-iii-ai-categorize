@@ -8,17 +8,17 @@
     ".NETCoreApp,Version=v10.0": {
       "FireflyCategorizer/1.0.0": {
         "dependencies": {
-          "Microsoft.FluentUI.AspNetCore.Components": "4.14.0"
+          "MudBlazor": "9.3.0"
         },
         "runtime": {
           "FireflyCategorizer.dll": {}
         }
       },
-      "Microsoft.FluentUI.AspNetCore.Components/4.14.0": {
+      "MudBlazor/9.3.0": {
         "runtime": {
-          "lib/net10.0/Microsoft.FluentUI.AspNetCore.Components.dll": {
-            "assemblyVersion": "4.14.0.26043",
-            "fileVersion": "4.14.0.26043"
+          "lib/net10.0/MudBlazor.dll": {
+            "assemblyVersion": "9.3.0.0",
+            "fileVersion": "9.3.0.0"
           }
         }
       }
@@ -30,12 +30,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Microsoft.FluentUI.AspNetCore.Components/4.14.0": {
+    "MudBlazor/9.3.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-GzFqPwOkiLdJwnue+hv03DKhoDQwiYJ+K4fiJC7UTWqxgUlOSI4JeiERsUMedx3Diu6hzIt+jLisL8PniB86cA==",
-      "path": "microsoft.fluentui.aspnetcore.components/4.14.0",
-      "hashPath": "microsoft.fluentui.aspnetcore.components.4.14.0.nupkg.sha512"
+      "sha512": "sha512-7EMI5HRvi7SNh1e80RWoS4yXb71BmJbqyx/ccP5T21q3ceLx5AP+SSIfTzqI5Iv6CbcJQQYLp1uwWtvohIeZrA==",
+      "path": "mudblazor/9.3.0",
+      "hashPath": "mudblazor.9.3.0.nupkg.sha512"
     }
   }
 }

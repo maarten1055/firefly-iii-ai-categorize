@@ -57,9 +57,9 @@
               "version": "[10.0.5, )",
               "autoReferenced": true
             },
-            "Microsoft.FluentUI.AspNetCore.Components": {
+            "MudBlazor": {
               "target": "Package",
-              "version": "[4.14.0, )"
+              "version": "[9.3.0, )"
             }
           },
           "imports": [

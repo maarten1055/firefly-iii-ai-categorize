@@ -1,29 +1,29 @@
-<FluentGrid Spacing="4">
-    <FluentGridItem xs="12" sm="6" md="3">
-        <FluentCard>
-            <small>Queued</small>
-            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@GetStatusCount("queued")</div>
-        </FluentCard>
-    </FluentGridItem>
-    <FluentGridItem xs="12" sm="6" md="3">
-        <FluentCard>
-            <small>In progress</small>
-            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@GetStatusCount("in_progress")</div>
-        </FluentCard>
-    </FluentGridItem>
-    <FluentGridItem xs="12" sm="6" md="3">
-        <FluentCard>
-            <small>Partial or failed</small>
-            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@(GetStatusCount("partial") + GetStatusCount("failed"))</div>
-        </FluentCard>
-    </FluentGridItem>
-    <FluentGridItem xs="12" sm="6" md="3">
-        <FluentCard>
-            <small>Finished</small>
-            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@GetStatusCount("finished")</div>
-        </FluentCard>
-    </FluentGridItem>
-</FluentGrid>
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Style="border-left: 4px solid #039be5;">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Queued</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight:700;line-height:1.1" Color="Color.Info">@GetStatusCount("queued")</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Style="border-left: 4px solid #fb8c00;">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">In progress</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight:700;line-height:1.1" Color="Color.Warning">@GetStatusCount("in_progress")</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Style="border-left: 4px solid #e53935;">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Partial or failed</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight:700;line-height:1.1" Color="Color.Error">@(GetStatusCount("partial") + GetStatusCount("failed"))</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Style="border-left: 4px solid #43a047;">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Finished</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight:700;line-height:1.1" Color="Color.Success">@GetStatusCount("finished")</MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
     [Parameter, EditorRequired]

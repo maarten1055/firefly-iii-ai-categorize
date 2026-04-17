@@ -1,47 +1,114 @@
 @inherits LayoutComponentBase
 
-<FluentDesignTheme @bind-Mode="themeMode"
-                   @bind-OfficeColor="themeColor"
-                   StorageName="firefly-theme" />
-<FluentToastProvider MaxToastCount="5" Timeout="5000" />
-<FluentDialogProvider />
+<MudThemeProvider @ref="_mudThemeProvider" Theme="_theme" @bind-IsDarkMode="isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
-    <FluentStack VerticalGap="24">
-        <FluentCard>
-            <FluentGrid Spacing="4">
-                <FluentGridItem xs="12" lg="8">
-                    <FluentStack VerticalGap="10">
-                        <FluentStack VerticalGap="4">
-                            <small>Blazor server console</small>
-                            <strong style="font-size: 1.8rem; line-height: 1.1;">Firefly III AI Categorizer</strong>
-                        </FluentStack>
-
-                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
-                            <FluentButton Appearance="Appearance.Accent" Href="/">Dashboard</FluentButton>
-                            <FluentButton Appearance="Appearance.Outline" Href="/uncategorized">Uncategorized</FluentButton>
-                        </FluentStack>
-                    </FluentStack>
-                </FluentGridItem>
-
-                <FluentGridItem xs="12" lg="4">
-                    <FluentStack VerticalGap="8" HorizontalAlignment="HorizontalAlignment.End">
-                        <small>Theme</small>
-                        <ThemeSwitcher @bind-Mode="themeMode" @bind-OfficeColor="themeColor" />
-                    </FluentStack>
-                </FluentGridItem>
-            </FluentGrid>
-        </FluentCard>
-
-        <main>
+<MudLayout>
+    <MudAppBar Elevation="2" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="DrawerToggle" />
+        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Class="ml-1 mr-2" />
+        <MudText Typo="Typo.h6">Firefly III AI Categorizer</MudText>
+        <MudSpacer />
+        <ThemeSwitcher @bind-IsDarkMode="isDarkMode" />
+    </MudAppBar>
+    <MudDrawer @bind-Open="drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.subtitle1" Color="Color.Primary"><strong>Navigation</strong></MudText>
+        </MudDrawerHeader>
+        <MudNavMenu Rounded="true" Margin="Margin.Dense" Color="Color.Primary" Class="pa-2">
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+            <MudNavLink Href="/uncategorized" Icon="@Icons.Material.Filled.Category">Uncategorized</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-4">
             @Body
-        </main>
-
-        <footer>
-            <small>Server-rendered with Blazor and Fluent UI.</small>
-        </footer>
-    </FluentStack>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
 @code {
-    private DesignThemeModes themeMode = DesignThemeModes.System;
-    private OfficeColor? themeColor = OfficeColor.Excel;
+    private MudThemeProvider _mudThemeProvider = default!;
+    private bool drawerOpen = true;
+    private bool isDarkMode;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#2e7d6b",
+            PrimaryDarken = "#1b5e50",
+            PrimaryLighten = "#52a899",
+            PrimaryContrastText = "#ffffff",
+            Secondary = "#3949ab",
+            SecondaryContrastText = "#ffffff",
+            AppbarBackground = "#2e7d6b",
+            AppbarText = "#ffffff",
+            DrawerBackground = "#f4f6f8",
+            DrawerText = "#1a1a2e",
+            Background = "#f0f2f5",
+            Surface = "#ffffff",
+            Success = "#43a047",
+            Warning = "#fb8c00",
+            Error = "#e53935",
+            Info = "#039be5",
+            TextPrimary = "#1a1a2e",
+            TextSecondary = "#546e7a",
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#52a899",
+            PrimaryDarken = "#2e7d6b",
+            PrimaryLighten = "#80cbc4",
+            PrimaryContrastText = "#ffffff",
+            Secondary = "#7986cb",
+            SecondaryContrastText = "#ffffff",
+            AppbarBackground = "#1a2e2b",
+            AppbarText = "#e0f2f1",
+            DrawerBackground = "#1a2e2b",
+            DrawerText = "#e0f2f1",
+            Background = "#121212",
+            Surface = "#1e1e2e",
+            Success = "#66bb6a",
+            Warning = "#ffa726",
+            Error = "#ef5350",
+            Info = "#29b6f6",
+            TextPrimary = "#e0f2f1",
+            TextSecondary = "#90a4ae",
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography { FontFamily = ["Inter", "Roboto", "sans-serif"] },
+            H4 = new H4Typography { FontWeight = "700" },
+            H5 = new H5Typography { FontWeight = "600" },
+            H6 = new H6Typography { FontWeight = "600" },
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            AppbarHeight = "64px",
+            DrawerWidthLeft = "220px",
+        },
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
+            await _mudThemeProvider.WatchSystemDarkModeAsync(OnSystemPreferenceChanged);
+            StateHasChanged();
+        }
+    }
+
+    private Task OnSystemPreferenceChanged(bool isDark)
+    {
+        isDarkMode = isDark;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void DrawerToggle() => drawerOpen = !drawerOpen;
 }
+

@@ -1,57 +1,63 @@
-@implements IDialogContentComponent<JobRecord>
+<MudDialogContent>
+    <MudStack Spacing="4">
+        <MudPaper Class="pa-4">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h6">Job summary</MudText>
+                <MudStack Spacing="1">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Status</MudText><strong>@Content.Status</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Destination</MudText><strong>@(Content.Data.DestinationName ?? "Unknown destination")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Description</MudText><strong>@(Content.Data.Description ?? "No description")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Category</MudText><strong>@(Content.Data.Category ?? "Not set")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>Budget</MudText><strong>@(Content.Data.Budget ?? "Not set")</strong></MudStack>
+                    <MudStack Row="true" Justify="Justify.SpaceBetween"><MudText>History used</MudText><strong>@Content.Data.HistoryCount</strong></MudStack>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
 
-<FluentStack VerticalGap="16">
-    <FluentCard>
-        <FluentStack VerticalGap="8">
-            <h3>Job summary</h3>
-            <FluentStack VerticalGap="6">
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Status</span><strong>@Content.Status</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Destination</span><strong>@(Content.Data.DestinationName ?? "Unknown destination")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Description</span><strong>@(Content.Data.Description ?? "No description")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Category</span><strong>@(Content.Data.Category ?? "Not set")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>Budget</span><strong>@(Content.Data.Budget ?? "Not set")</strong></FluentStack>
-                <FluentStack Orientation="Orientation.Horizontal" HorizontalAlignment="HorizontalAlignment.SpaceBetween" Wrap="true" HorizontalGap="12" VerticalGap="4"><span>History used</span><strong>@Content.Data.HistoryCount</strong></FluentStack>
-            </FluentStack>
-        </FluentStack>
-    </FluentCard>
+        @if (!string.IsNullOrWhiteSpace(Content.Data.ManualUpdate))
+        {
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Manual update</MudText>
+                    <MudText>@Content.Data.ManualUpdate</MudText>
+                </MudStack>
+            </MudPaper>
+        }
 
-    @if (!string.IsNullOrWhiteSpace(Content.Data.ManualUpdate))
-    {
-        <FluentCard>
-            <FluentStack VerticalGap="8">
-                <h3>Manual update</h3>
-                <div>@Content.Data.ManualUpdate</div>
-            </FluentStack>
-        </FluentCard>
-    }
+        @if (!string.IsNullOrWhiteSpace(Content.Data.Error))
+        {
+            <MudAlert Severity="Severity.Error" Title="Error">@Content.Data.Error</MudAlert>
+        }
 
-    @if (!string.IsNullOrWhiteSpace(Content.Data.Error))
-    {
-        <FluentMessageBar Intent="MessageIntent.Error" Title="Error">@Content.Data.Error</FluentMessageBar>
-    }
+        @if (!string.IsNullOrWhiteSpace(Content.Data.Prompt))
+        {
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Prompt</MudText>
+                    <pre>@Content.Data.Prompt</pre>
+                </MudStack>
+            </MudPaper>
+        }
 
-    @if (!string.IsNullOrWhiteSpace(Content.Data.Prompt))
-    {
-        <FluentCard>
-            <FluentStack VerticalGap="8">
-                <h3>Prompt</h3>
-                <pre>@Content.Data.Prompt</pre>
-            </FluentStack>
-        </FluentCard>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(Content.Data.Response))
-    {
-        <FluentCard>
-            <FluentStack VerticalGap="8">
-                <h3>Model response</h3>
-                <pre>@Content.Data.Response</pre>
-            </FluentStack>
-        </FluentCard>
-    }
-</FluentStack>
+        @if (!string.IsNullOrWhiteSpace(Content.Data.Response))
+        {
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Model response</MudText>
+                    <pre>@Content.Data.Response</pre>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
+</MudDialogContent>
+<MudDialogActions>
+    <MudButton OnClick="@(() => MudDialog.Close())">Close</MudButton>
+</MudDialogActions>
 
 @code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
     [Parameter]
     public JobRecord Content { get; set; } = default!;
 }

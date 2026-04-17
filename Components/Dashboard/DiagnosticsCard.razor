@@ -1,47 +1,47 @@
-<FluentCard>
-    <FluentStack VerticalGap="12">
-        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="12">
+<MudPaper Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <div>
-                <small>System check</small>
-                <h2>Provider health</h2>
+                <MudText Typo="Typo.caption">System check</MudText>
+                <MudText Typo="Typo.h5">Provider health</MudText>
             </div>
             @if (IsRunning)
             {
-                <strong>Running checks...</strong>
+                <MudText><strong>Running checks...</strong></MudText>
             }
-        </FluentStack>
+        </MudStack>
 
         @if (!string.IsNullOrWhiteSpace(Error))
         {
-            <FluentMessageBar Intent="MessageIntent.Error">Diagnostics failed: @Error</FluentMessageBar>
+            <MudAlert Severity="Severity.Error">Diagnostics failed: @Error</MudAlert>
         }
 
         @if (Checks.Count == 0 && string.IsNullOrWhiteSpace(Error))
         {
-            <p>Run a live check against Firefly III and your configured AI provider.</p>
+            <MudText>Run a live check against Firefly III and your configured AI provider.</MudText>
         }
         else
         {
-            <FluentStack VerticalGap="12">
+            <MudStack Spacing="2">
                 @foreach (var check in Checks)
                 {
-                    <FluentMessageBar Intent="@(check.Ok ? MessageIntent.Success : MessageIntent.Error)">@check.Name: @(check.Ok ? "OK" : "Failed")</FluentMessageBar>
+                    <MudAlert Severity="@(check.Ok ? Severity.Success : Severity.Error)">@check.Name: @(check.Ok ? "OK" : "Failed")</MudAlert>
                     @foreach (var pair in check.Details)
                     {
-                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalAlignment="HorizontalAlignment.SpaceBetween" HorizontalGap="12" VerticalGap="4">
-                            <span>@pair.Key</span>
-                            <strong>@pair.Value</strong>
-                        </FluentStack>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudText>@pair.Key</MudText>
+                            <MudText><strong>@pair.Value</strong></MudText>
+                        </MudStack>
                     }
                 }
-            </FluentStack>
+            </MudStack>
         }
 
-        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="12">
-            <FluentButton Appearance="Appearance.Accent" @onclick="RefreshRequested">Run diagnostics</FluentButton>
-        </FluentStack>
-    </FluentStack>
-</FluentCard>
+        <div>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RefreshRequested">Run diagnostics</MudButton>
+        </div>
+    </MudStack>
+</MudPaper>
 
 @code {
     [Parameter, EditorRequired]

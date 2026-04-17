@@ -1,29 +1,31 @@
-<FluentGrid Spacing="4">
-    <FluentGridItem xs="12" sm="6" md="3">
-        <FluentCard>
-            <small>Transactions in view</small>
-            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@Summary.TotalTransactions</div>
-        </FluentCard>
-    </FluentGridItem>
-    <FluentGridItem xs="12" sm="6" md="3">
-        <FluentCard>
-            <small>Without category</small>
-            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@Summary.WithoutCategory</div>
-        </FluentCard>
-    </FluentGridItem>
-    <FluentGridItem xs="12" sm="6" md="3">
-        <FluentCard>
-            <small>Without budget</small>
-            <div style="font-size: 2rem; font-weight: 700; line-height: 1.1;">@Summary.WithoutBudget</div>
-        </FluentCard>
-    </FluentGridItem>
-    <FluentGridItem xs="12" sm="6" md="3">
-        <FluentCard>
-            <small>Scan status</small>
-            <div style="font-size: 1.4rem; font-weight: 700; line-height: 1.1;">@(MetadataComplete && PaginationComplete ? "Complete" : "Updating")</div>
-        </FluentCard>
-    </FluentGridItem>
-</FluentGrid>
+<MudGrid>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Style="border-left: 4px solid #039be5;">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Transactions in view</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight:700;line-height:1.1" Color="Color.Info">@Summary.TotalTransactions</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Style="border-left: 4px solid #fb8c00;">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Without category</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight:700;line-height:1.1" Color="Color.Warning">@Summary.WithoutCategory</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Style="border-left: 4px solid #fb8c00;">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Without budget</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight:700;line-height:1.1" Color="Color.Warning">@Summary.WithoutBudget</MudText>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Class="pa-4" Style="@($"border-left: 4px solid {(MetadataComplete && PaginationComplete ? "#43a047" : "#039be5")};")">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Scan status</MudText>
+            <MudText Typo="Typo.h5" Style="font-weight:700;line-height:1.1" Color="@(MetadataComplete && PaginationComplete ? Color.Success : Color.Info)">
+                @(MetadataComplete && PaginationComplete ? "Complete" : "Updating")
+            </MudText>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
     [Parameter, EditorRequired]

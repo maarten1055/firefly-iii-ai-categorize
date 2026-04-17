@@ -12,23 +12,24 @@
           "buildMultiTargeting/Microsoft.AspNetCore.App.Internal.Assets.targets": {}
         }
       },
-      "Microsoft.FluentUI.AspNetCore.Components/4.14.0": {
+      "MudBlazor/9.3.0": {
         "type": "package",
         "compile": {
-          "lib/net10.0/Microsoft.FluentUI.AspNetCore.Components.dll": {
+          "lib/net10.0/MudBlazor.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net10.0/Microsoft.FluentUI.AspNetCore.Components.dll": {
+          "lib/net10.0/MudBlazor.dll": {
             "related": ".xml"
           }
         },
         "build": {
-          "buildTransitive/Microsoft.FluentUI.AspNetCore.Components.props": {}
+          "build/MudBlazor.targets": {},
+          "buildTransitive/MudBlazor.props": {}
         },
         "buildMultiTargeting": {
-          "buildMultiTargeting/Microsoft.FluentUI.AspNetCore.Components.props": {}
+          "buildMultiTargeting/MudBlazor.props": {}
         }
       }
     }
@@ -57,74 +58,42 @@
         "microsoft.aspnetcore.app.internal.assets.nuspec"
       ]
     },
-    "Microsoft.FluentUI.AspNetCore.Components/4.14.0": {
-      "sha512": "GzFqPwOkiLdJwnue+hv03DKhoDQwiYJ+K4fiJC7UTWqxgUlOSI4JeiERsUMedx3Diu6hzIt+jLisL8PniB86cA==",
+    "MudBlazor/9.3.0": {
+      "sha512": "7EMI5HRvi7SNh1e80RWoS4yXb71BmJbqyx/ccP5T21q3ceLx5AP+SSIfTzqI5Iv6CbcJQQYLp1uwWtvohIeZrA==",
       "type": "package",
-      "path": "microsoft.fluentui.aspnetcore.components/4.14.0",
+      "path": "mudblazor/9.3.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
+        "LICENSE",
+        "Nuget.png",
         "README.md",
+        "analyzers/dotnet/cs/MudBlazor.Analyzers.CodeFixes.dll",
+        "analyzers/dotnet/cs/MudBlazor.Analyzers.dll",
         "build/Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
         "build/Microsoft.AspNetCore.StaticWebAssets.props",
-        "build/Microsoft.FluentUI.AspNetCore.Components.props",
-        "buildMultiTargeting/Microsoft.FluentUI.AspNetCore.Components.props",
-        "buildTransitive/Microsoft.FluentUI.AspNetCore.Components.props",
-        "icon.png",
-        "lib/net10.0/Microsoft.FluentUI.AspNetCore.Components.dll",
-        "lib/net10.0/Microsoft.FluentUI.AspNetCore.Components.xml",
-        "lib/net8.0/Microsoft.FluentUI.AspNetCore.Components.dll",
-        "lib/net8.0/Microsoft.FluentUI.AspNetCore.Components.xml",
-        "lib/net9.0/Microsoft.FluentUI.AspNetCore.Components.dll",
-        "lib/net9.0/Microsoft.FluentUI.AspNetCore.Components.xml",
-        "microsoft.fluentui.aspnetcore.components.4.14.0.nupkg.sha512",
-        "microsoft.fluentui.aspnetcore.components.nuspec",
-        "staticwebassets/Components/Accordion/FluentAccordionItem.razor.js",
-        "staticwebassets/Components/Anchor/FluentAnchor.razor.js",
-        "staticwebassets/Components/AnchoredRegion/FluentAnchoredRegion.razor.js",
-        "staticwebassets/Components/Button/FluentButton.razor.js",
-        "staticwebassets/Components/Checkbox/FluentCheckbox.razor.js",
-        "staticwebassets/Components/DataGrid/FluentDataGrid.razor.js",
-        "staticwebassets/Components/DateTime/FluentTimePicker.razor.js",
-        "staticwebassets/Components/DesignSystemProvider/FluentDesignTheme.razor.js",
-        "staticwebassets/Components/Dialog/FluentDialogProvider.razor.js",
-        "staticwebassets/Components/Divider/FluentDivider.razor.js",
-        "staticwebassets/Components/Grid/FluentGrid.razor.js",
-        "staticwebassets/Components/HorizontalScroll/FluentHorizontalScroll.razor.js",
-        "staticwebassets/Components/InputFile/FluentInputFile.razor.js",
-        "staticwebassets/Components/KeyCode/FluentKeyCode.razor.js",
-        "staticwebassets/Components/Label/FluentInputLabel.razor.js",
-        "staticwebassets/Components/List/FluentAutocomplete.razor.js",
-        "staticwebassets/Components/List/FluentCombobox.razor.js",
-        "staticwebassets/Components/List/ListComponentBase.razor.js",
-        "staticwebassets/Components/Menu/FluentMenu.razor.js",
-        "staticwebassets/Components/NavMenu/FluentNavMenu.razor.js",
-        "staticwebassets/Components/Overflow/FluentOverflow.razor.js",
-        "staticwebassets/Components/Overlay/FluentOverlay.razor.js",
-        "staticwebassets/Components/PullToRefresh/FluentPullToRefresh.razor.js",
-        "staticwebassets/Components/Search/FluentSearch.razor.js",
-        "staticwebassets/Components/Slider/FluentSlider.razor.js",
-        "staticwebassets/Components/Slider/FluentSliderLabel.razor.js",
-        "staticwebassets/Components/SortableList/FluentSortableList.razor.js",
-        "staticwebassets/Components/Splitter/FluentMultiSplitter.razor.js",
-        "staticwebassets/Components/Tabs/FluentTab.razor.js",
-        "staticwebassets/Components/TextField/FluentTextField.razor.js",
-        "staticwebassets/Components/Toolbar/FluentToolbar.razor.js",
-        "staticwebassets/Components/Tooltip/FluentTooltip.razor.js",
-        "staticwebassets/Microsoft.FluentUI.AspNetCore.Components.84wtju4z0n.bundle.scp.css",
-        "staticwebassets/Microsoft.FluentUI.AspNetCore.Components.lib.module.js",
-        "staticwebassets/Microsoft.FluentUI.AspNetCore.Components.lib.module.js.LEGAL.txt",
-        "staticwebassets/Microsoft.FluentUI.AspNetCore.Components.lib.module.js.map",
-        "staticwebassets/css/reboot.css",
-        "staticwebassets/js/initializersLoader.webview.js",
-        "staticwebassets/js/loading-theme.js"
+        "build/MudBlazor.props",
+        "build/MudBlazor.targets",
+        "buildMultiTargeting/MudBlazor.props",
+        "buildTransitive/MudBlazor.props",
+        "lib/net10.0/MudBlazor.dll",
+        "lib/net10.0/MudBlazor.xml",
+        "lib/net8.0/MudBlazor.dll",
+        "lib/net8.0/MudBlazor.xml",
+        "lib/net9.0/MudBlazor.dll",
+        "lib/net9.0/MudBlazor.xml",
+        "mudblazor.9.3.0.nupkg.sha512",
+        "mudblazor.nuspec",
+        "staticwebassets/MudBlazor.min.css",
+        "staticwebassets/MudBlazor.min.js",
+        "staticwebassets/MudBlazor.min.js.map"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "net10.0": [
       "Microsoft.AspNetCore.App.Internal.Assets >= 10.0.5",
-      "Microsoft.FluentUI.AspNetCore.Components >= 4.14.0"
+      "MudBlazor >= 9.3.0"
     ]
   },
   "packageFolders": {
@@ -184,9 +153,9 @@
             "version": "[10.0.5, )",
             "autoReferenced": true
           },
-          "Microsoft.FluentUI.AspNetCore.Components": {
+          "MudBlazor": {
             "target": "Package",
-            "version": "[4.14.0, )"
+            "version": "[9.3.0, )"
           }
         },
         "imports": [

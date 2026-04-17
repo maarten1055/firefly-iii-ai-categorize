@@ -1,42 +1,15 @@
-<FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12" VerticalAlignment="VerticalAlignment.Center">
-    <FluentSwitch Value="@(Mode == DesignThemeModes.Dark)"
-                  ValueChanged="OnModeSwitchChanged"
-                  Label="Theme">
-        <span slot="checked-message">Dark</span>
-        <span slot="unchecked-message">System</span>
-    </FluentSwitch>
-
-    <FluentSelect Items="themeColors"
-                  Style="min-width: 170px;"
-                  @bind-SelectedOption="OfficeColor">
-        <OptionTemplate>
-            <span>@context</span>
-        </OptionTemplate>
-    </FluentSelect>
-</FluentStack>
+<MudTooltip Text="@(IsDarkMode ? "Switch to light mode" : "Switch to dark mode")">
+    <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                   Color="Color.Inherit"
+                   OnClick="Toggle" />
+</MudTooltip>
 
 @code {
-    private readonly Microsoft.FluentUI.AspNetCore.Components.OfficeColor?[] themeColors =
-    [
-        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Excel,
-        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Outlook,
-        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Teams,
-        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.Word,
-        Microsoft.FluentUI.AspNetCore.Components.OfficeColor.PowerPoint,
-    ];
+    [Parameter]
+    public bool IsDarkMode { get; set; }
 
     [Parameter]
-    public DesignThemeModes Mode { get; set; }
+    public EventCallback<bool> IsDarkModeChanged { get; set; }
 
-    [Parameter]
-    public EventCallback<DesignThemeModes> ModeChanged { get; set; }
-
-    [Parameter]
-    public OfficeColor? OfficeColor { get; set; }
-
-    [Parameter]
-    public EventCallback<OfficeColor?> OfficeColorChanged { get; set; }
-
-    private Task OnModeSwitchChanged(bool enabled)
-        => ModeChanged.InvokeAsync(enabled ? DesignThemeModes.Dark : DesignThemeModes.System);
+    private Task Toggle() => IsDarkModeChanged.InvokeAsync(!IsDarkMode);
 }

@@ -1,6 +1,6 @@
 using FireflyCategorizer.Models;
 using FireflyCategorizer.Services;
-using Microsoft.FluentUI.AspNetCore.Components;
+using MudBlazor.Services;
 
 LoadDotEnv(
 	Directory.GetCurrentDirectory(),
@@ -12,12 +12,12 @@ LoadDotEnv(builder.Environment.ContentRootPath, Directory.GetCurrentDirectory())
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddRazorComponents()
 	.AddInteractiveServerComponents();
-builder.Services.AddFluentUIComponents();
+builder.Services.AddHttpClient();
+builder.Services.AddMudServices();
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
 	options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
-builder.Services.AddHttpClient();
 builder.Services.AddSingleton<FireflyService>();
 builder.Services.AddSingleton<AiClassifierService>();
 builder.Services.AddSingleton<JobStore>();
@@ -28,6 +28,8 @@ builder.Services.AddSingleton<CategorizationCoordinator>();
 var app = builder.Build();
 
 var enableUi = string.Equals(app.Configuration["ENABLE_UI"], "true", StringComparison.OrdinalIgnoreCase);
+
+enableUi = true;
 
 app.UseStaticFiles();
 app.UseAntiforgery();

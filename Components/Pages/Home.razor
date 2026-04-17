@@ -6,55 +6,55 @@
 @inject CategorizationCoordinator Coordinator
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
-@inject IToastService ToastService
+@inject ISnackbar Snackbar
 
 <PageTitle>Dashboard</PageTitle>
 
-<FluentGrid Spacing="5">
-    <FluentGridItem xs="12">
-        <FluentCard>
-            <FluentGrid Spacing="4">
-                <FluentGridItem xs="12" lg="8">
-                    <FluentStack VerticalGap="12">
-                        <small>Operations dashboard</small>
+<MudGrid Spacing="3">
+    <MudItem xs="12" md="6">
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" lg="8">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.caption">Operations dashboard</MudText>
                         <div>
-                            <h1>Keep an eye on automation without leaving Firefly.</h1>
-                            <p>Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.</p>
+                            <MudText Typo="Typo.h4">Keep an eye on automation without leaving Firefly.</MudText>
+                            <MudText>Watch webhook jobs, inspect AI output, and repair partial categorizations from one server-side console.</MudText>
                         </div>
-                    </FluentStack>
-                </FluentGridItem>
+                    </MudStack>
+                </MudItem>
 
-                <FluentGridItem xs="12" lg="4">
-                    <FluentStack VerticalGap="10" HorizontalAlignment="HorizontalAlignment.Stretch">
-                        <FluentMessageBar Intent="MessageIntent.Info">Queued: @GetStatusCount("queued") | In progress: @GetStatusCount("in_progress")</FluentMessageBar>
-                        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="12" VerticalGap="12">
-                            <FluentButton Appearance="Appearance.Accent" @onclick="RunDiagnosticsAsync">Run diagnostics</FluentButton>
-                            <FluentButton Appearance="Appearance.Outline" @onclick='() => Navigation.NavigateTo("/uncategorized")'>Review uncategorized</FluentButton>
-                        </FluentStack>
-                    </FluentStack>
-                </FluentGridItem>
-            </FluentGrid>
-        </FluentCard>
-    </FluentGridItem>
+                <MudItem xs="12" lg="4">
+                    <MudStack Spacing="2">
+                        <MudAlert Severity="Severity.Info">Queued: @GetStatusCount("queued") | In progress: @GetStatusCount("in_progress")</MudAlert>
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RunDiagnosticsAsync">Run diagnostics</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick='() => Navigation.NavigateTo("/uncategorized")'>Review uncategorized</MudButton>
+                        </MudStack>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
 
-    <FluentGridItem xs="12">
+    <MudItem xs="12" md="6">
         <StatusSummaryCards Jobs="jobs" />
-    </FluentGridItem>
+    </MudItem>
 
-    <FluentGridItem xs="12" lg="4">
+    <MudItem xs="12" lg="4">
         <DiagnosticsCard Checks="diagnosticChecks"
                          Error="diagnosticsError"
                          IsRunning="diagnosticsRunning"
                          RefreshRequested="RunDiagnosticsAsync" />
-    </FluentGridItem>
+    </MudItem>
 
-    <FluentGridItem xs="12" lg="8">
+    <MudItem xs="12" lg="8">
         <JobsDataGrid Jobs="jobs"
                       PendingFillJobIds="pendingFillJobIds"
                       FillMissingRequested="PromptFillMissingAsync"
                       ViewDetailsRequested="ShowJobDetailsAsync" />
-    </FluentGridItem>
-</FluentGrid>
+    </MudItem>
+</MudGrid>
 
 @code {
     private readonly CancellationTokenSource disposeCts = new();
@@ -94,17 +94,17 @@
 
             if (diagnosticChecks.All(check => check.Ok))
             {
-                ToastService.ShowSuccess("Diagnostics completed successfully.");
+                Snackbar.Add("Diagnostics completed successfully.", Severity.Success);
             }
             else
             {
-                ToastService.ShowWarning("Diagnostics completed with failures.");
+                Snackbar.Add("Diagnostics completed with failures.", Severity.Warning);
             }
         }
         catch (Exception exception)
         {
             diagnosticsError = exception.Message;
-            ToastService.ShowError($"Diagnostics failed: {exception.Message}");
+            Snackbar.Add($"Diagnostics failed: {exception.Message}", Severity.Error);
         }
         finally
         {
@@ -140,9 +140,8 @@
 
     private async Task PromptFillMissingAsync(string jobId)
     {
-        var dialog = await DialogService.ShowConfirmationAsync("Fill the remaining category or budget for this job?", "Fill missing value", "Cancel", "Repair partial job");
-        var result = await dialog.Result;
-        if (result.Cancelled)
+        var confirmed = await DialogService.ShowMessageBoxAsync("Fill missing value", "Fill the remaining category or budget for this job?", yesText: "Repair partial job", cancelText: "Cancel");
+        if (confirmed != true)
         {
             return;
         }
@@ -160,11 +159,11 @@
         try
         {
             await Coordinator.FillMissingJobValueAsync(jobId, disposeCts.Token);
-            ToastService.ShowSuccess("Missing value filled for the selected job.");
+            Snackbar.Add("Missing value filled for the selected job.", Severity.Success);
         }
         catch (Exception exception)
         {
-            ToastService.ShowError($"Could not fill missing value: {exception.Message}");
+            Snackbar.Add($"Could not fill missing value: {exception.Message}", Severity.Error);
             throw;
         }
         finally
@@ -175,14 +174,9 @@
 
     private async Task ShowJobDetailsAsync(JobRecord job)
     {
-        await DialogService.ShowPanelAsync<JobDetailsDialog>(job, new DialogParameters
-        {
-            Title = job.Data.DestinationName ?? "Job details",
-            Width = "720px",
-            Alignment = HorizontalAlignment.Right,
-            Modal = false,
-            ShowDismiss = true,
-        });
+        var parameters = new DialogParameters<JobDetailsDialog> { { x => x.Content, job } };
+        var options = new DialogOptions { Position = DialogPosition.CenterRight, CloseButton = true, MaxWidth = MaxWidth.Medium };
+        await DialogService.ShowAsync<JobDetailsDialog>(job.Data.DestinationName ?? "Job details", parameters, options);
     }
 
     private static Dictionary<string, string> Describe(object value)
