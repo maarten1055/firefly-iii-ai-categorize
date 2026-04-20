@@ -1,0 +1,511 @@
+@page "/analytics"
+@implements IDisposable
+@using ApexCharts
+@inject FireflyService FireflyService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Transaction Analytics</PageTitle>
+
+<MudGrid Spacing="3">
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudGrid>
+                <MudItem xs="12" lg="8">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.caption">Portfolio analytics</MudText>
+                        <div>
+                            <MudText Typo="Typo.h4">All transactions at a glance</MudText>
+                            <MudText>Track cashflow trends, see where money moves most often, and inspect the latest transactions without leaving this workspace.</MudText>
+                        </div>
+                    </MudStack>
+                </MudItem>
+
+                <MudItem xs="12" lg="4">
+                    <MudStack Spacing="2">
+                        <MudAlert Severity="Severity.Info">Range: @(loading ? "Loading analytics..." : GetDateRangeLabel())</MudAlert>
+                        <MudAlert Severity="Severity.Success">@(loading ? "Loaded: fetching transactions from Firefly III..." : $"Loaded: {analytics.Summary.TotalTransactions} transaction(s) for {GetAccountLabel()}")</MudAlert>
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                            <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="LoadAnalyticsAsync">Refresh</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="MudBlazor.Color.Primary" OnClick='() => Navigation.NavigateTo("/")'>Dashboard</MudButton>
+                        </MudStack>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    @if (!string.IsNullOrWhiteSpace(loadError))
+    {
+        <MudItem xs="12">
+            <MudAlert Severity="Severity.Error">Analytics unavailable: @loadError</MudAlert>
+        </MudItem>
+    }
+
+    <MudItem xs="12">
+        <MudPaper Class="pa-4">
+            <MudGrid Spacing="2">
+                <MudItem xs="12" md="4">
+                    <MudSelect T="string" Label="Own account" Value="selectedAccount" ValueChanged="OnAccountChanged" Variant="Variant.Outlined" Dense="true">
+                        <MudSelectItem T="string" Value="@string.Empty">All own accounts</MudSelectItem>
+                        @foreach (var account in ownAccounts)
+                        {
+                            <MudSelectItem T="string" Value="@account">@account</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudSelect T="string" Label="Period" Value="selectedPeriodKey" ValueChanged="OnPeriodChanged" Variant="Variant.Outlined" Dense="true">
+                        @foreach (var option in periodOptions)
+                        {
+                            <MudSelectItem T="string" Value="@option.Key">@option.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.caption">Filter summary</MudText>
+                        <MudText>@GetAccountLabel() • @GetPeriodLabel()</MudText>
+                        <MudText Typo="Typo.caption">Primary currency: @GetDisplay(analytics.Summary.CurrencyCode, "Unknown")</MudText>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudItem>
+
+    @if (loading)
+    {
+        <MudItem xs="12">
+            <MudPaper Class="pa-6">
+                <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                    <MudProgressCircular Color="MudBlazor.Color.Primary" Indeterminate="true" />
+                    <MudText>Loading transactions from Firefly III...</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    }
+    else
+    {
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.caption">All transactions</MudText>
+                <MudText Typo="Typo.h4">@analytics.Summary.TotalTransactions</MudText>
+                <MudText Typo="Typo.body2">Across deposits, withdrawals, and transfers.</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.caption">Expenses</MudText>
+                <MudText Typo="Typo.h4">@FormatMoney(analytics.Summary.TotalExpenses)</MudText>
+                <MudText Typo="Typo.body2">@analytics.Summary.WithdrawalTransactions withdrawal(s)</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.caption">Income</MudText>
+                <MudText Typo="Typo.h4">@FormatMoney(analytics.Summary.TotalIncome)</MudText>
+                <MudText Typo="Typo.body2">@analytics.Summary.DepositTransactions deposit(s)</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.caption">Net cashflow</MudText>
+                <MudText Typo="Typo.h4">@FormatSignedMoney(analytics.Summary.NetCashflow)</MudText>
+                <MudText Typo="Typo.body2">Income minus expenses.</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.caption">Without category</MudText>
+                <MudText Typo="Typo.h4">@analytics.Summary.UncategorizedWithdrawals</MudText>
+                <MudText Typo="Typo.body2">Withdrawals still uncategorized.</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" lg="2">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.caption">Without budget</MudText>
+                <MudText Typo="Typo.h4">@analytics.Summary.UnbudgetedWithdrawals</MudText>
+                <MudText Typo="Typo.body2">Withdrawals still missing budget.</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="8">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Trend</MudText>
+                        <MudText Typo="Typo.h5">Cashflow by month</MudText>
+                    </div>
+                    <ApexChart TItem="TransactionMonthlySnapshot" Title="Income vs expenses" Height="350" Options="monthlyChartOptions">
+                        <ApexPointSeries TItem="TransactionMonthlySnapshot" Items="analytics.MonthlyCashflow" Name="Income" SeriesType="SeriesType.Bar" XValue="item => item.Label" YValue="item => item.Income" />
+                        <ApexPointSeries TItem="TransactionMonthlySnapshot" Items="analytics.MonthlyCashflow" Name="Expenses" SeriesType="SeriesType.Bar" XValue="item => item.Label" YValue="item => item.Expenses" />
+                        <ApexPointSeries TItem="TransactionMonthlySnapshot" Items="analytics.MonthlyCashflow" Name="Net" SeriesType="SeriesType.Line" XValue="item => item.Label" YValue="item => item.Net" />
+                    </ApexChart>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Composition</MudText>
+                        <MudText Typo="Typo.h5">Transaction types</MudText>
+                    </div>
+                    <ApexChart TItem="TransactionTypeSnapshot" Title="Volume per type" Height="350" Options="typeChartOptions">
+                        <ApexPointSeries TItem="TransactionTypeSnapshot" Items="analytics.TypeBreakdown" Name="Volume" SeriesType="SeriesType.Donut" XValue="item => item.Type" YValue="item => item.Amount" />
+                    </ApexChart>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Monthly delta</MudText>
+                        <MudText Typo="Typo.h5">Net result per month</MudText>
+                    </div>
+                    <ApexChart TItem="TransactionMonthlySnapshot" Title="Month-on-month net" Height="320" Options="netTrendChartOptions">
+                        <ApexPointSeries TItem="TransactionMonthlySnapshot" Items="analytics.MonthlyCashflow" Name="Net" SeriesType="SeriesType.Area" XValue="item => item.Label" YValue="item => item.Net" />
+                    </ApexChart>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Spending mix</MudText>
+                        <MudText Typo="Typo.h5">Top categories by amount</MudText>
+                    </div>
+                    <ApexChart TItem="TransactionAnalyticsPoint" Title="Largest spend categories" Height="320" Options="horizontalBarChartOptions">
+                        <ApexPointSeries TItem="TransactionAnalyticsPoint" Items="analytics.TopCategories" Name="Spend" SeriesType="SeriesType.Bar" XValue="item => item.Label" YValue="item => item.Amount" />
+                    </ApexChart>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Budget split</MudText>
+                        <MudText Typo="Typo.h5">Top budgets by spend</MudText>
+                    </div>
+                    <ApexChart TItem="TransactionAnalyticsPoint" Title="Largest spend budgets" Height="320" Options="horizontalBarChartOptions">
+                        <ApexPointSeries TItem="TransactionAnalyticsPoint" Items="analytics.TopBudgets" Name="Budget spend" SeriesType="SeriesType.Bar" XValue="item => item.Label" YValue="item => item.Amount" />
+                    </ApexChart>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="4">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Counterparties</MudText>
+                        <MudText Typo="Typo.h5">Top counterparties by volume</MudText>
+                    </div>
+                    <ApexChart TItem="TransactionAnalyticsPoint" Title="Most frequent counterparties" Height="320" Options="horizontalBarChartOptions">
+                        <ApexPointSeries TItem="TransactionAnalyticsPoint" Items="analytics.TopDestinations" Name="Volume" SeriesType="SeriesType.Bar" XValue="item => item.Label" YValue="item => item.Amount" />
+                    </ApexChart>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Income mix</MudText>
+                        <MudText Typo="Typo.h5">Top income sources</MudText>
+                    </div>
+                    <ApexChart TItem="TransactionAnalyticsPoint" Title="Largest income sources" Height="320" Options="horizontalBarChartOptions">
+                        <ApexPointSeries TItem="TransactionAnalyticsPoint" Items="analytics.TopIncomeSources" Name="Income" SeriesType="SeriesType.Bar" XValue="item => item.Label" YValue="item => item.Amount" />
+                    </ApexChart>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="6">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Month winners</MudText>
+                        <MudText Typo="Typo.h5">Best and weakest months</MudText>
+                    </div>
+                    <MudTable Items="GetMonthlyHighlights()" Dense="true" Hover="true">
+                        <HeaderContent>
+                            <MudTh>Month</MudTh>
+                            <MudTh>Income</MudTh>
+                            <MudTh>Expenses</MudTh>
+                            <MudTh>Net</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Month">@context.Label</MudTd>
+                            <MudTd DataLabel="Income">@FormatMoney(context.Income)</MudTd>
+                            <MudTd DataLabel="Expenses">@FormatMoney(context.Expenses)</MudTd>
+                            <MudTd DataLabel="Net">@FormatSignedMoney(context.Net)</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="3">
+                    <div>
+                        <MudText Typo="Typo.caption">Recent activity</MudText>
+                        <MudText Typo="Typo.h5">Latest transactions</MudText>
+                    </div>
+                    <MudTable Items="analytics.RecentTransactions" Dense="true" Hover="true">
+                        <HeaderContent>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Description</MudTh>
+                            <MudTh>Type</MudTh>
+                            <MudTh>Counterparty</MudTh>
+                            <MudTh>Amount</MudTh>
+                            <MudTh>Category</MudTh>
+                            <MudTh>Budget</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Date">@FormatDate(context.Date)</MudTd>
+                            <MudTd DataLabel="Description">@GetDisplay(context.Description, "No description")</MudTd>
+                            <MudTd DataLabel="Type">@ToTitleCase(context.Type)</MudTd>
+                            <MudTd DataLabel="Counterparty">@GetDisplay(context.Counterparty, "Unknown")</MudTd>
+                            <MudTd DataLabel="Amount">@FormatMoney(context.Amount, context.CurrencyCode)</MudTd>
+                            <MudTd DataLabel="Category">@GetDisplay(context.Category, "-")</MudTd>
+                            <MudTd DataLabel="Budget">@GetDisplay(context.Budget, "-")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private readonly CancellationTokenSource disposeCts = new();
+    private readonly List<PeriodOption> periodOptions =
+    [
+        new("3", "Last 3 months", 3),
+        new("6", "Last 6 months", 6),
+        new("12", "Last 12 months", 12),
+        new("24", "Last 24 months", 24),
+        new("all", "All time", null),
+    ];
+    private TransactionAnalyticsResponse analytics = new();
+    private List<string> ownAccounts = [];
+    private bool loading = true;
+    private string? loadError;
+    private string selectedAccount = string.Empty;
+    private string selectedPeriodKey = "12";
+
+    private ApexChartOptions<TransactionMonthlySnapshot> monthlyChartOptions => new()
+    {
+        Colors = ["#1f7a6b", "#d95f43", "#2457c5"],
+        Legend = new Legend { Position = LegendPosition.Top },
+        Chart = new Chart { Toolbar = new Toolbar { Show = true } },
+        Grid = new Grid { BorderColor = "#d7dde6", StrokeDashArray = 4 },
+        Stroke = new Stroke { Width = new List<double> { 0, 0, 3 } },
+        DataLabels = new DataLabels { Enabled = false },
+        Yaxis =
+        [
+            new YAxis
+            {
+                Labels = new YAxisLabels { Formatter = @"function(value) { return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value); }" }
+            }
+        ],
+        Tooltip = new Tooltip
+        {
+            Y = new TooltipY
+            {
+                Formatter = @"function(value) { return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value); }"
+            }
+        }
+    };
+
+    private ApexChartOptions<TransactionAnalyticsPoint> horizontalBarChartOptions => new()
+    {
+        Colors = ["#2457c5"],
+        Chart = new Chart { Toolbar = new Toolbar { Show = false } },
+        PlotOptions = new PlotOptions
+        {
+            Bar = new PlotOptionsBar { Horizontal = true, BorderRadius = 6 }
+        },
+        DataLabels = new DataLabels { Enabled = false },
+        Grid = new Grid { BorderColor = "#d7dde6", StrokeDashArray = 4 },
+        Xaxis = new XAxis { Labels = new XAxisLabels { Formatter = @"function(value) { return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value); }" } },
+        Tooltip = new Tooltip
+        {
+            Y = new TooltipY
+            {
+                Formatter = @"function(value) { return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value); }"
+            }
+        }
+    };
+
+    private ApexChartOptions<TransactionTypeSnapshot> typeChartOptions => new()
+    {
+        Colors = ["#d95f43", "#1f7a6b", "#7c52cc"],
+        Chart = new Chart { Toolbar = new Toolbar { Show = false } },
+        Legend = new Legend { Position = LegendPosition.Bottom },
+        DataLabels = new DataLabels { Enabled = true },
+        Tooltip = new Tooltip
+        {
+            Y = new TooltipY
+            {
+                Formatter = @"function(value) { return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value); }"
+            }
+        }
+    };
+
+    private ApexChartOptions<TransactionMonthlySnapshot> netTrendChartOptions => new()
+    {
+        Colors = ["#2f855a"],
+        Chart = new Chart { Toolbar = new Toolbar { Show = false } },
+        Stroke = new Stroke { Curve = Curve.Smooth, Width = new List<double> { 3 } },
+        DataLabels = new DataLabels { Enabled = false },
+        Grid = new Grid { BorderColor = "#d7dde6", StrokeDashArray = 4 },
+        Fill = new Fill
+        {
+            Type = FillType.Gradient,
+            Gradient = new FillGradient { ShadeIntensity = 0.3, OpacityFrom = 0.45, OpacityTo = 0.05 }
+        },
+        Yaxis =
+        [
+            new YAxis
+            {
+                Labels = new YAxisLabels { Formatter = @"function(value) { return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value); }" }
+            }
+        ],
+        Tooltip = new Tooltip
+        {
+            Y = new TooltipY
+            {
+                Formatter = @"function(value) { return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value); }"
+            }
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        ownAccounts = (await FireflyService.GetOwnAccountsAsync(disposeCts.Token)).ToList();
+        await LoadAnalyticsAsync();
+    }
+
+    private async Task LoadAnalyticsAsync()
+    {
+        loading = true;
+        loadError = null;
+
+        try
+        {
+            analytics = await FireflyService.GetTransactionAnalyticsAsync(GetSelectedMonths(), selectedAccount, disposeCts.Token);
+        }
+        catch (Exception exception)
+        {
+            loadError = exception.Message;
+            Snackbar.Add($"Could not load transaction analytics: {exception.Message}", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task OnAccountChanged(string value)
+    {
+        selectedAccount = value;
+        await LoadAnalyticsAsync();
+    }
+
+    private async Task OnPeriodChanged(string value)
+    {
+        selectedPeriodKey = value;
+        await LoadAnalyticsAsync();
+    }
+
+    private int? GetSelectedMonths() => periodOptions.First(option => option.Key == selectedPeriodKey).Months;
+
+    private string GetPeriodLabel() => periodOptions.First(option => option.Key == selectedPeriodKey).Label;
+
+    private string GetAccountLabel() => string.IsNullOrWhiteSpace(selectedAccount) ? "all own accounts" : selectedAccount;
+
+    private IReadOnlyList<TransactionMonthlySnapshot> GetMonthlyHighlights()
+    {
+        if (analytics.MonthlyCashflow.Count <= 2)
+        {
+            return analytics.MonthlyCashflow;
+        }
+
+        var bestMonth = analytics.MonthlyCashflow.MaxBy(item => item.Net);
+        var worstMonth = analytics.MonthlyCashflow.MinBy(item => item.Net);
+
+        return new List<TransactionMonthlySnapshot> { bestMonth!, worstMonth! }
+            .DistinctBy(item => item.Label)
+            .ToList();
+    }
+
+    private string GetDateRangeLabel()
+    {
+        if (analytics.Summary.FirstTransactionDate is null || analytics.Summary.LastTransactionDate is null)
+        {
+            return "No data";
+        }
+
+        return $"{analytics.Summary.FirstTransactionDate.Value:dd MMM yyyy} to {analytics.Summary.LastTransactionDate.Value:dd MMM yyyy}";
+    }
+
+    private string FormatMoney(decimal value, string? currencyCode = null)
+    {
+        var code = string.IsNullOrWhiteSpace(currencyCode) ? analytics.Summary.CurrencyCode : currencyCode;
+        return string.IsNullOrWhiteSpace(code)
+            ? value.ToString("N2")
+            : $"{value:N2} {code}";
+    }
+
+    private string FormatSignedMoney(decimal value)
+    {
+        var prefix = value > 0 ? "+" : string.Empty;
+        return $"{prefix}{FormatMoney(value)}";
+    }
+
+    private static string FormatDate(string? value)
+    {
+        return DateTimeOffset.TryParse(value, out var parsed)
+            ? parsed.ToString("dd MMM yyyy")
+            : "No date";
+    }
+
+    private static string GetDisplay(string? value, string fallback)
+        => string.IsNullOrWhiteSpace(value) ? fallback : value;
+
+    private static string ToTitleCase(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "Unknown";
+        }
+
+        return value.Length == 1
+            ? value.ToUpperInvariant()
+            : char.ToUpperInvariant(value[0]) + value[1..];
+    }
+
+    public void Dispose()
+    {
+        disposeCts.Cancel();
+        disposeCts.Dispose();
+    }
+
+    private sealed record PeriodOption(string Key, string Label, int? Months);
+}

@@ -1,5 +1,6 @@
 using FireflyCategorizer.Models;
 using FireflyCategorizer.Services;
+using ApexCharts;
 using MudBlazor.Services;
 
 LoadDotEnv(
@@ -14,6 +15,7 @@ builder.Services.AddRazorComponents()
 	.AddInteractiveServerComponents();
 builder.Services.AddHttpClient();
 builder.Services.AddMudServices();
+builder.Services.AddApexCharts();
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
 	options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
@@ -37,6 +39,7 @@ app.UseAntiforgery();
 if (enableUi)
 {
 	app.MapGet("/index.html", () => Results.Redirect("/", permanent: false));
+	app.MapGet("/analytics.html", () => Results.Redirect("/analytics", permanent: false));
 	app.MapGet("/uncategorized.html", () => Results.Redirect("/uncategorized", permanent: false));
 	app.MapRazorComponents<FireflyCategorizer.Components.App>()
 		.AddInteractiveServerRenderMode();
@@ -44,6 +47,7 @@ if (enableUi)
 else
 {
 	app.MapGet("/", () => Results.Text("Web UI is disabled. Set ENABLE_UI=true and restart the application to serve the UI at /."));
+	app.MapGet("/analytics", () => Results.Text("Web UI is disabled. Set ENABLE_UI=true and restart the application to serve the UI at /."));
 	app.MapGet("/uncategorized", () => Results.Text("Web UI is disabled. Set ENABLE_UI=true and restart the application to serve the UI at /."));
 }
 

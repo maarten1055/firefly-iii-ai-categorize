@@ -29,6 +29,7 @@
                         <MudAlert Severity="Severity.Info">Queued: @GetStatusCount("queued") | In progress: @GetStatusCount("in_progress")</MudAlert>
                         <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RunDiagnosticsAsync">Run diagnostics</MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick='() => Navigation.NavigateTo("/analytics")'>Open analytics</MudButton>
                             <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick='() => Navigation.NavigateTo("/uncategorized")'>Review uncategorized</MudButton>
                         </MudStack>
                     </MudStack>

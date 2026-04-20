@@ -136,6 +136,69 @@ public sealed class DestinationRankItem
     public int MissingTotal => WithoutCategory + WithoutBudget;
 }
 
+public sealed class TransactionAnalyticsSummary
+{
+    public int TotalTransactions { get; set; }
+    public int WithdrawalTransactions { get; set; }
+    public int DepositTransactions { get; set; }
+    public int TransferTransactions { get; set; }
+    public decimal TotalExpenses { get; set; }
+    public decimal TotalIncome { get; set; }
+    public decimal NetCashflow { get; set; }
+    public int UncategorizedWithdrawals { get; set; }
+    public int UnbudgetedWithdrawals { get; set; }
+    public string CurrencyCode { get; set; } = string.Empty;
+    public DateTimeOffset? FirstTransactionDate { get; set; }
+    public DateTimeOffset? LastTransactionDate { get; set; }
+}
+
+public sealed class TransactionAnalyticsPoint
+{
+    public string Label { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public int Count { get; set; }
+}
+
+public sealed class TransactionMonthlySnapshot
+{
+    public string Label { get; set; } = string.Empty;
+    public decimal Income { get; set; }
+    public decimal Expenses { get; set; }
+    public decimal Net => Income - Expenses;
+    public int Count { get; set; }
+}
+
+public sealed class TransactionTypeSnapshot
+{
+    public string Type { get; set; } = string.Empty;
+    public int Count { get; set; }
+    public decimal Amount { get; set; }
+}
+
+public sealed class TransactionAnalyticsListItem
+{
+    public string Type { get; set; } = string.Empty;
+    public string? Date { get; set; }
+    public string? Description { get; set; }
+    public string? Counterparty { get; set; }
+    public decimal Amount { get; set; }
+    public string? CurrencyCode { get; set; }
+    public string? Category { get; set; }
+    public string? Budget { get; set; }
+}
+
+public sealed class TransactionAnalyticsResponse
+{
+    public TransactionAnalyticsSummary Summary { get; set; } = new();
+    public List<TransactionMonthlySnapshot> MonthlyCashflow { get; set; } = [];
+    public List<TransactionAnalyticsPoint> TopCategories { get; set; } = [];
+    public List<TransactionAnalyticsPoint> TopBudgets { get; set; } = [];
+    public List<TransactionAnalyticsPoint> TopIncomeSources { get; set; } = [];
+    public List<TransactionAnalyticsPoint> TopDestinations { get; set; } = [];
+    public List<TransactionTypeSnapshot> TypeBreakdown { get; set; } = [];
+    public List<TransactionAnalyticsListItem> RecentTransactions { get; set; } = [];
+}
+
 public sealed class TransactionReviewDialogModel
 {
     public UncategorizedTransaction Transaction { get; set; } = new();
